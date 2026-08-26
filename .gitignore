@@ -23,5 +23,6 @@ Thumbs.db
 .idea/
 
 # Tooling caches (not project content)
+.claude/
 .impeccable/
 **/.vite/
