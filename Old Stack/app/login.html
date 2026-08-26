@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — SmartEduTrack</title>
+<meta name="description" content="Staff sign-in for the SmartEduTrack coaching-centre console.">
+<link rel="icon" href="../assets/logo.jpeg">
+<link rel="apple-touch-icon" href="../assets/logo.jpeg">
+<meta name="theme-color" content="#FAF7F1">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=zodiak@400,500,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#FAF7F1;--cream-2:#F1EBDF;--paper:#FFFFFF;--ink:#221E15;--ink-2:#4A4436;--muted:#6E6754;
+  --green:#20503C;--brick:#A93B2A;--gold:#B98A31;--gold-bright:#D9B461;
+  --line:rgba(34,30,21,.10);--line-soft:rgba(34,30,21,.06);--shell:rgba(34,30,21,.045);
+  --red:#A93B2A;
+  --serif:'Zodiak',Georgia,'Times New Roman',serif;
+  --sans:'General Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --ease:cubic-bezier(.32,.72,0,1);--ease-out:cubic-bezier(.23,1,.32,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100dvh;background:var(--cream);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;padding:20px}
+::selection{background:var(--gold-bright);color:var(--ink)}
+img{display:block;max-width:100%}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:8px}
+.grain{position:fixed;inset:0;z-index:80;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E")}
+.top{max-width:1140px;width:100%;margin:0 auto 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.back{display:inline-flex;align-items:center;gap:9px;text-decoration:none;color:var(--ink-2);font-size:14px;font-weight:600;
+  padding:10px 16px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.6);
+  transition:transform .2s var(--ease-out),background .2s var(--ease-out)}
+.back:active{transform:scale(.97)}
+@media (hover:hover){.back:hover{background:#fff}}
+.top-brand{display:flex;align-items:center;gap:10px}
+.top-brand img{width:38px;height:38px;object-fit:contain;background:#fff;border-radius:11px;border:1px solid var(--line-soft);padding:3px}
+.top-brand b{font-family:var(--serif);font-weight:700;font-size:17px}
+.top-brand span{font-size:11px;color:var(--muted);letter-spacing:.02em;display:block;font-family:var(--sans)}
+
+.stage{flex:1;display:flex;align-items:center;justify-content:center}
+.panel{width:100%;max-width:1080px;background:var(--shell);border:1px solid var(--line-soft);border-radius:2rem;padding:7px;
+  opacity:1;transform:translateY(0);transition:opacity .6s var(--ease-out),transform .6s var(--ease-out)}
+@starting-style{.panel{opacity:0;transform:translateY(18px)}}
+.panel-core{background:var(--paper);border-radius:calc(2rem - 7px);box-shadow:inset 0 1px 1px rgba(255,255,255,.9);
+  overflow:hidden;display:grid;grid-template-columns:1.05fr 1fr;min-height:580px}
+
+.visual{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:580px}
+.visual img.ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.visual::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(18,43,32,.94) 0%,rgba(18,43,32,.46) 46%,rgba(18,43,32,.2) 100%)}
+.v-body{position:relative;z-index:2;padding:38px;color:#F2EDE0}
+.v-chip{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(217,180,97,.4);border-radius:999px;background:rgba(18,43,32,.55);
+  padding:7px 14px;font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-bright);margin-bottom:18px}
+.v-quote{font-family:var(--serif);font-weight:500;font-size:clamp(1.5rem,2vw,1.95rem);line-height:1.25;letter-spacing:-.01em;
+  max-width:26ch;text-wrap:balance;text-indent:-.5em}
+.v-quote::before{content:'“';color:var(--gold-bright)}
+.v-quote::after{content:'”';color:var(--gold-bright)}
+.v-cite{display:inline-flex;align-items:center;gap:10px;margin-top:14px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(242,237,224,.75)}
+.v-cite::before{content:'';width:24px;height:1px;background:var(--gold-bright)}
+
+.form-side{padding:clamp(2rem,4vw,3.2rem);display:flex;flex-direction:column;justify-content:center;gap:18px}
+.f-head h1{font-family:var(--serif);font-weight:500;font-size:clamp(2rem,3vw,2.5rem);letter-spacing:-.015em;line-height:1.1}
+.f-head p{color:var(--muted);font-size:15px;margin-top:8px}
+
+.form-err{display:flex;gap:9px;align-items:flex-start;background:rgba(169,59,42,.08);border:1px solid rgba(169,59,42,.25);
+  border-radius:12px;padding:11px 14px;font-size:14px;color:var(--red);font-weight:500}
+.form-err svg{flex:none;margin-top:2px}
+.form-err[hidden]{display:none}
+
+.fld{display:flex;flex-direction:column;gap:7px}
+.lbl{font-size:13px;font-weight:600;color:var(--ink-2);letter-spacing:.005em}
+.fld input{width:100%;min-height:52px;padding:0 16px;border:1.5px solid var(--line);border-radius:14px;background:#fff;
+  font-family:var(--sans);font-size:16.5px;color:var(--ink);transition:border-color .2s var(--ease-out),box-shadow .2s var(--ease-out)}
+.fld input::placeholder{color:rgba(110,103,84,.5)}
+.fld input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 4px rgba(185,138,49,.14)}
+.fld.invalid input{border-color:var(--red)}
+.fld.invalid input:focus{box-shadow:0 0 0 4px rgba(169,59,42,.14)}
+.fld-err{font-size:13px;color:var(--red);font-weight:500;min-height:0}
+.fld-err:empty{display:none}
+.pwd-wrap{position:relative}
+.pwd-wrap input{padding-right:52px}
+.eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;border-radius:50%;cursor:pointer;
+  background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:background .16s var(--ease-out),transform .12s var(--ease-out)}
+.eye:active{transform:translateY(-50%) scale(.92)}
+@media (hover:hover){.eye:hover{background:var(--cream-2)}}
+
+.opts{display:flex;align-items:center;justify-content:space-between;gap:12px 16px;flex-wrap:wrap}
+.remember{display:inline-flex;align-items:center;gap:11px;cursor:pointer;user-select:none;font-size:14px;font-weight:500;color:var(--ink-2)}
+.remember input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.switch{position:relative;width:44px;height:26px;flex:none;border-radius:999px;background:var(--cream-2);border:1px solid var(--line);
+  transition:background .22s var(--ease-out),border-color .22s var(--ease-out)}
+.switch::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;
+  box-shadow:0 2px 6px -1px rgba(34,30,21,.4);transition:transform .26s var(--ease)}
+.remember input:checked + .switch{background:var(--green);border-color:var(--green)}
+.remember input:checked + .switch::after{transform:translateX(18px)}
+.remember input:focus-visible + .switch{outline:2px solid var(--gold);outline-offset:3px}
+.forgot{border:none;background:none;cursor:pointer;padding:6px 2px;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;
+  color:var(--brick);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;transition:opacity .16s var(--ease-out)}
+.forgot:active{opacity:.55}
+.help{display:grid;grid-template-rows:0fr;transition:grid-template-rows .34s var(--ease)}
+.help.open{grid-template-rows:1fr}
+.help > div{min-height:0;overflow:hidden}
+.help-card{border:1px solid var(--line-soft);border-radius:14px;background:var(--cream);padding:14px;margin-top:2px;display:flex;flex-direction:column;gap:12px}
+.help-card p{font-size:13.5px;color:var(--ink-2);line-height:1.55}
+.help-actions{display:flex;gap:10px;flex-wrap:wrap}
+.help-btn{display:inline-flex;align-items:center;gap:9px;text-decoration:none;border-radius:999px;padding:10px 16px;font-family:var(--sans);
+  font-size:14px;font-weight:600;background:var(--green);color:#F2F7EF;transition:transform .16s var(--ease-out),filter .18s var(--ease-out)}
+.help-btn:active{transform:scale(.97)}
+@media (hover:hover){.help-btn:hover{filter:brightness(1.08)}}
+
+.submit{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;border:none;cursor:pointer;
+  background:var(--brick);color:#FFF7EE;border-radius:999px;min-height:58px;padding:8px 8px 8px 26px;
+  font-family:var(--sans);font-size:16.5px;font-weight:600;letter-spacing:.01em;
+  transition:transform .16s var(--ease-out),background .2s var(--ease-out)}
+.submit:active{transform:scale(.98)}
+@media (hover:hover){.submit:hover{background:#8F3222}}
+.submit .orb{width:42px;height:42px;border-radius:50%;flex:none;background:rgba(255,247,238,.16);display:inline-flex;align-items:center;justify-content:center;transition:transform .24s var(--ease-out)}
+@media (hover:hover){.submit:hover .orb{transform:translate(2px,-1px) scale(1.05)}}
+.submit.busy{pointer-events:none}
+.submit .txt{transition:opacity .18s var(--ease-out),filter .18s var(--ease-out)}
+.submit.busy .txt{opacity:.72;filter:blur(1.2px)}
+.spinner{width:18px;height:18px;border-radius:50%;flex:none;border:2px solid rgba(255,247,238,.35);border-top-color:#FFF7EE;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.note{display:flex;gap:10px;align-items:flex-start;background:var(--cream);border:1px solid var(--line-soft);border-radius:14px;
+  padding:12px 14px;font-size:13.5px;color:var(--ink-2);line-height:1.55}
+.note svg{flex:none;color:var(--gold);margin-top:2px}
+.note strong{font-weight:600}
+.demo-hint{font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
+.demo-hint b{font-weight:700;color:var(--ink-2)}
+
+@media (max-width:900px){
+  body{padding:14px}
+  .panel-core{grid-template-columns:1fr;min-height:0}
+  .visual{min-height:186px;order:-1}
+  .v-body{padding:22px}
+  .v-quote{font-size:1.15rem;max-width:34ch}
+  .v-chip{margin-bottom:10px}
+  .form-side{padding:26px 20px 30px}
+  .top-brand span{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}
+  .panel{opacity:1;transform:none}
+}
+</style>
+<script src="shared/constants.js"></script>
+<script src="shared/auth.js"></script>
+<script src="shared/api.js"></script>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<div class="top">
+  <a class="back" href="../index.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    Back to the website
+  </a>
+  <span class="top-brand"><img src="../assets/logo.jpeg" alt="Smart Education logo"><span><b style="font-family:var(--serif)">SmartEduTrack</b><span>Smart Education · Asansol</span></span></span>
+</div>
+
+<main class="stage">
+  <div class="panel">
+    <div class="panel-core">
+
+      <aside class="visual">
+        <img class="ph" src="../assets/photos/certificates-day.jpeg" alt="Smart Education teachers and students on NBCE certificate day" fetchpriority="high" decoding="async">
+        <div class="v-body">
+          <span class="v-chip">Staff console · v1.0</span>
+          <p class="v-quote">A place runs well when the people who run it can see it clearly.</p>
+          <span class="v-cite">SmartEduTrack</span>
+        </div>
+      </aside>
+
+      <form class="form-side" id="loginForm" novalidate>
+        <div class="f-head">
+          <h1>Sign in</h1>
+          <p>The SmartEduTrack console for teachers and the Super Admin.</p>
+        </div>
+
+        <div class="form-err" id="formErr" role="alert" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          <span id="formErrMsg"></span>
+        </div>
+
+        <label class="fld" id="fEmail">
+          <span class="lbl">Email</span>
+          <input id="email" name="email" type="email" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="you@smartedutrack.in" enterkeyhint="next">
+          <span class="fld-err" id="errEmail"></span>
+        </label>
+
+        <label class="fld" id="fPassword">
+          <span class="lbl">Password</span>
+          <span class="pwd-wrap">
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Your password" enterkeyhint="go">
+            <button type="button" class="eye" id="eyeBtn" aria-label="Show password" aria-pressed="false">
+              <svg id="eyeOpen" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg id="eyeShut" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="m1 1 22 22"/></svg>
+            </button>
+          </span>
+          <span class="fld-err" id="errPassword"></span>
+        </label>
+
+        <div class="opts">
+          <label class="remember"><input type="checkbox" id="rememberChk"><span class="switch" aria-hidden="true"></span>Remember my email</label>
+          <button type="button" class="forgot" id="forgotBtn" aria-expanded="false" aria-controls="helpPanel">Trouble signing in?</button>
+        </div>
+        <div class="help" id="helpPanel">
+          <div><div class="help-card">
+            <p>Staff accounts are created and reset by your Super Admin. If you can't get in, contact the office and we'll sort it the same day.</p>
+            <div class="help-actions">
+              <a class="help-btn" href="tel:+919382938916"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Call the office</a>
+            </div>
+          </div></div>
+        </div>
+
+        <button class="submit" type="submit" id="submitBtn">
+          <span class="txt" id="submitTxt">Sign in</span>
+          <span class="orb" id="submitOrb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </button>
+
+        <div class="note">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <p>Only <strong>staff</strong> sign in here — the Super Admin and teachers. Students don't have accounts in this version; their records are kept for them.</p>
+        </div>
+        <p class="demo-hint">Demo build — any email signs you in. Include <b>“admin”</b> in the address to see the Super Admin console.</p>
+      </form>
+
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(id){return document.getElementById(id);};
+
+  /* If already signed in, skip straight to the role's home. */
+  var s=SE.auth.session();
+  if(s&&s.token){ location.replace(SE.auth.homeFor(s.role)); return; }
+
+  var form=$('loginForm'), email=$('email'), pwd=$('password'),
+      submitBtn=$('submitBtn'), submitTxt=$('submitTxt'), submitOrb=$('submitOrb'),
+      formErr=$('formErr'), formErrMsg=$('formErrMsg'),
+      rememberChk=$('rememberChk');
+
+  /* remember email */
+  try{ var re=localStorage.getItem('set-remember-email'); if(re){ email.value=re; rememberChk.checked=true; } }catch(e){}
+
+  /* show / hide password */
+  var eyeBtn=$('eyeBtn'), eyeOpen=$('eyeOpen'), eyeShut=$('eyeShut');
+  eyeBtn.addEventListener('click',function(){
+    var show=pwd.type==='password';
+    pwd.type=show?'text':'password';
+    eyeOpen.style.display=show?'none':'block'; eyeShut.style.display=show?'block':'none';
+    eyeBtn.setAttribute('aria-pressed',show);
+    eyeBtn.setAttribute('aria-label',show?'Hide password':'Show password');
+  });
+
+  /* trouble-signing-in panel */
+  var forgotBtn=$('forgotBtn'), helpPanel=$('helpPanel');
+  forgotBtn.addEventListener('click',function(){
+    var open=helpPanel.classList.toggle('open');
+    forgotBtn.setAttribute('aria-expanded',open);
+  });
+
+  function fieldErr(which,msg){
+    $('err'+which).textContent=msg||'';
+    $('f'+which).classList.toggle('invalid',!!msg);
+  }
+  function clearErrors(){ fieldErr('Email',''); fieldErr('Password',''); formErr.hidden=true; }
+  email.addEventListener('input',function(){ fieldErr('Email',''); });
+  pwd.addEventListener('input',function(){ fieldErr('Password',''); });
+
+  function validate(){
+    var ok=true, e=(email.value||'').trim(), p=pwd.value||'';
+    if(!e){ fieldErr('Email','Enter your email.'); ok=false; }
+    else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){ fieldErr('Email','That doesn’t look like an email address.'); ok=false; }
+    if(!p){ fieldErr('Password','Enter your password.'); ok=false; }
+    return ok;
+  }
+
+  form.addEventListener('submit',function(ev){
+    ev.preventDefault();
+    if(submitBtn.classList.contains('busy')) return;
+    clearErrors();
+    if(!validate()) return;
+
+    submitBtn.classList.add('busy');
+    submitTxt.textContent='Signing you in…';
+    submitOrb.innerHTML='<span class="spinner"></span>';
+
+    try{
+      if(rememberChk.checked) localStorage.setItem('set-remember-email',(email.value||'').trim());
+      else localStorage.removeItem('set-remember-email');
+    }catch(e){}
+
+    SE.api.auth.login({ email:(email.value||'').trim(), password:pwd.value })
+      .then(function(session){
+        SE.auth.set(session);
+        location.href=SE.auth.homeFor(session.role);
+      })
+      .catch(function(err){
+        submitBtn.classList.remove('busy');
+        submitTxt.textContent='Sign in';
+        submitOrb.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+        formErrMsg.textContent=(err&&err.message)||'We couldn’t sign you in. Check your email and password.';
+        formErr.hidden=false;
+      });
+  });
+})();
+</script>
+</body>
+</html>

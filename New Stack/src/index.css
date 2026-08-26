@@ -1,0 +1,343 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------ *
+ * Dark variant — mirrors the app's "effective theme" logic:
+ * explicit [data-theme=dark]  OR  (system dark AND not explicit light).
+ * Colours mostly switch through the runtime tokens below, so this variant
+ * is only for the rare structural override.
+ * ------------------------------------------------------------------ */
+@custom-variant dark {
+  &:where([data-theme='dark'] *, [data-theme='dark']) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:not([data-theme='light'] *):not([data-theme='light'])) {
+      @slot;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Token → utility mapping. Every value points at a runtime CSS var that
+ * switches by theme, so `bg-card`, `text-secondary`, `border-separator`
+ * stay correct in light and dark automatically (@theme inline).
+ * ------------------------------------------------------------------ */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-surf: var(--surf);
+  --color-ink: var(--ink);
+  --color-fill: var(--fill);
+  --color-fill-2: var(--fill-2);
+  --color-label: var(--label);
+  --color-secondary: var(--secondary);
+  --color-tertiary: var(--tertiary);
+  --color-separator: var(--separator);
+  --color-edge: var(--edge);
+  --color-chrome: var(--chrome);
+
+  --color-blue: var(--blue);
+  --color-green: var(--green);
+  --color-red: var(--red);
+  --color-orange: var(--orange);
+  --color-teal: var(--teal);
+  --color-indigo: var(--indigo);
+  --color-gray: var(--gray);
+
+  --color-lime: var(--lime);
+  --color-lime-2: var(--lime-2);
+  --color-lime-ink: var(--lime-ink);
+  --color-bar-past: var(--bar-past);
+
+  --color-tint-blue: var(--tint-blue);
+  --color-tint-green: var(--tint-green);
+  --color-tint-red: var(--tint-red);
+  --color-tint-orange: var(--tint-orange);
+  --color-tint-gray: var(--tint-gray);
+
+  --font-sans: var(--font-portal);
+  --font-display: 'Clash Display', var(--font-portal);
+  --font-general: 'General Sans', var(--font-portal);
+
+  --radius-card: 14px;
+  --radius-bento: 24px;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.5, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ------------------------------------------------------------------ *
+ * Runtime tokens — LIGHT (bare :root). Ported from the portal design
+ * system, extended with the playful-bento identity (lime / Clash).
+ * ------------------------------------------------------------------ */
+:root {
+  color-scheme: light dark;
+
+  --bg: #f2f2f7;
+  --card: #ffffff;
+  --surf: var(--card);
+  --ink: #161a12;
+  --fill: rgba(120, 120, 128, 0.12);
+  --fill-2: rgba(120, 120, 128, 0.2);
+  --label: #0e0e10;
+  --secondary: rgba(60, 60, 67, 0.6);
+  --tertiary: rgba(60, 60, 67, 0.33);
+  --separator: rgba(60, 60, 67, 0.29);
+  --edge: var(--separator);
+  --chrome: rgba(242, 242, 247, 0.8);
+
+  --blue: #007aff;
+  --green: #34c759;
+  --red: #ff3b30;
+  --orange: #ff9500;
+  --teal: #30b0c7;
+  --indigo: #5856d6;
+  --gray: #8e8e93;
+
+  --tint-blue: rgba(0, 122, 255, 0.14);
+  --tint-green: rgba(52, 199, 89, 0.16);
+  --tint-red: rgba(255, 59, 48, 0.14);
+  --tint-orange: rgba(255, 149, 0, 0.16);
+  --tint-gray: rgba(120, 120, 128, 0.14);
+
+  /* bento identity */
+  --lime: #c6f24e;
+  --lime-2: #b4e82e;
+  --lime-ink: #16240a;
+  --bar-past: #a9c15e;
+
+  --font-portal: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text',
+    'Segoe UI', system-ui, sans-serif;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+/* Runtime tokens — DARK. Applied for system dark (unless explicit light)
+   and for the explicit dark toggle, so first paint is always correct. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #000000;
+    --card: #1c1c1e;
+    --surf: #20231c;
+    --ink: #12150e;
+    --fill: rgba(120, 120, 128, 0.24);
+    --fill-2: rgba(120, 120, 128, 0.36);
+    --label: #f5f5f7;
+    --secondary: rgba(235, 235, 245, 0.6);
+    --tertiary: rgba(235, 235, 245, 0.3);
+    --separator: rgba(84, 84, 88, 0.6);
+    --edge: rgba(198, 242, 78, 0.09);
+    --chrome: rgba(22, 22, 24, 0.75);
+
+    --blue: #0a84ff;
+    --green: #30d158;
+    --red: #ff453a;
+    --orange: #ff9f0a;
+    --teal: #40c8e0;
+    --indigo: #5e5ce6;
+    --gray: #98989d;
+
+    --tint-blue: rgba(10, 132, 255, 0.22);
+    --tint-green: rgba(48, 209, 88, 0.22);
+    --tint-red: rgba(255, 69, 58, 0.2);
+    --tint-orange: rgba(255, 159, 10, 0.22);
+    --tint-gray: rgba(120, 120, 128, 0.26);
+
+    --bar-past: #7f9a3f;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #000000;
+  --card: #1c1c1e;
+  --surf: #20231c;
+  --ink: #12150e;
+  --fill: rgba(120, 120, 128, 0.24);
+  --fill-2: rgba(120, 120, 128, 0.36);
+  --label: #f5f5f7;
+  --secondary: rgba(235, 235, 245, 0.6);
+  --tertiary: rgba(235, 235, 245, 0.3);
+  --separator: rgba(84, 84, 88, 0.6);
+  --edge: rgba(198, 242, 78, 0.09);
+  --chrome: rgba(22, 22, 24, 0.75);
+
+  --blue: #0a84ff;
+  --green: #30d158;
+  --red: #ff453a;
+  --orange: #ff9f0a;
+  --teal: #40c8e0;
+  --indigo: #5e5ce6;
+  --gray: #98989d;
+
+  --tint-blue: rgba(10, 132, 255, 0.22);
+  --tint-green: rgba(48, 209, 88, 0.22);
+  --tint-red: rgba(255, 69, 58, 0.2);
+  --tint-orange: rgba(255, 159, 10, 0.22);
+  --tint-gray: rgba(120, 120, 128, 0.26);
+
+  --bar-past: #7f9a3f;
+}
+
+/* ------------------------------------------------------------------ *
+ * Base
+ * ------------------------------------------------------------------ */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--bg);
+    color: var(--label);
+    font-family: var(--font-portal);
+    font-size: 17px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  img {
+    display: block;
+    max-width: 100%;
+  }
+  a {
+    color: var(--blue);
+    text-decoration: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+  ::selection {
+    background: var(--tint-blue);
+  }
+  /* tabular figures everywhere numbers line up */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Status pills — the label carries meaning, tone reinforces (never
+ * colour alone). One class per tone.
+ * ------------------------------------------------------------------ */
+@layer components {
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42em;
+    flex: none;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 3px 9px 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    line-height: 1.3;
+  }
+  /* leading tone dot — reinforces the label, never colour alone */
+  .pill::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: none;
+  }
+  .pill-green { background: var(--tint-green); color: var(--green); }
+  .pill-red { background: var(--tint-red); color: var(--red); }
+  .pill-amber { background: var(--tint-orange); color: var(--orange); }
+  .pill-blue { background: var(--tint-blue); color: var(--blue); }
+  .pill-gray { background: var(--tint-gray); color: var(--secondary); }
+
+  /* dot-less tinted chip (labels/counts, not statuses) */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex: none;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+    line-height: 1.35;
+  }
+  .chip-green { background: var(--tint-green); color: var(--green); }
+  .chip-red { background: var(--tint-red); color: var(--red); }
+  .chip-amber { background: var(--tint-orange); color: var(--orange); }
+  .chip-blue { background: var(--tint-blue); color: var(--blue); }
+  .chip-gray { background: var(--tint-gray); color: var(--secondary); }
+
+  /* Skeleton shimmer */
+  .skel-row {
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(
+      100deg,
+      var(--fill) 30%,
+      var(--fill-2) 50%,
+      var(--fill) 70%
+    );
+    background-size: 220% 100%;
+    animation: skel-shimmer 1.25s var(--ease-out) infinite;
+  }
+  @keyframes skel-shimmer {
+    from { background-position: 180% 0; }
+    to { background-position: -60% 0; }
+  }
+
+  /* Confirm dialog (native <dialog>) */
+  .se-dialog {
+    border: none;
+    background: transparent;
+    padding: 0;
+    max-width: min(92vw, 400px);
+  }
+  .se-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+  }
+}
+
+/* hide scrollbar utility */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Theme cross-fade (View Transitions API) — theme.toggle() drives the light/dark
+   swap through startViewTransition so the whole document eases at the compositor. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 340ms;
+  animation-timing-function: var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Reduced motion
+ * ------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

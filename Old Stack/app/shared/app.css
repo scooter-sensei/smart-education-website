@@ -1,0 +1,371 @@
+/* Smart Education — portal design system (Apple HIG-flavoured) */
+
+:root{
+  color-scheme:light dark;
+  --bg:#F2F2F7;
+  --card:#FFFFFF;
+  --fill:rgba(120,120,128,.12);
+  --fill-2:rgba(120,120,128,.2);
+  --label:#0E0E10;
+  --secondary:rgba(60,60,67,.6);
+  --tertiary:rgba(60,60,67,.33);
+  --separator:rgba(60,60,67,.29);
+  --chrome:rgba(242,242,247,.8);
+  --blue:#007AFF;
+  --green:#34C759;
+  --red:#FF3B30;
+  --orange:#FF9500;
+  --teal:#30B0C7;
+  --indigo:#5856D6;
+  --gray:#8E8E93;
+  --tint-blue:rgba(0,122,255,.14);
+  --tint-green:rgba(52,199,89,.16);
+  --tint-red:rgba(255,59,48,.14);
+  --tint-orange:rgba(255,149,0,.16);
+  --tint-gray:rgba(120,120,128,.14);
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --ease-drawer:cubic-bezier(.32,.72,0,1);
+  --maxw:724px;
+  --font:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI Variable Text','Segoe UI',system-ui,sans-serif;
+}
+:root[data-theme="light"]{color-scheme:light}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#000000;
+    --card:#1C1C1E;
+    --fill:rgba(120,120,128,.24);
+    --fill-2:rgba(120,120,128,.36);
+    --label:#F5F5F7;
+    --secondary:rgba(235,235,245,.6);
+    --tertiary:rgba(235,235,245,.3);
+    --separator:rgba(84,84,88,.6);
+    --chrome:rgba(22,22,24,.75);
+    --blue:#0A84FF;
+    --green:#30D158;
+    --red:#FF453A;
+    --orange:#FF9F0A;
+    --teal:#40C8E0;
+    --indigo:#5E5CE6;
+    --gray:#98989D;
+    --tint-blue:rgba(10,132,255,.22);
+    --tint-green:rgba(48,209,88,.22);
+    --tint-red:rgba(255,69,58,.2);
+    --tint-orange:rgba(255,159,10,.22);
+    --tint-gray:rgba(120,120,128,.26);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#000000;
+  --card:#1C1C1E;
+  --fill:rgba(120,120,128,.24);
+  --fill-2:rgba(120,120,128,.36);
+  --label:#F5F5F7;
+  --secondary:rgba(235,235,245,.6);
+  --tertiary:rgba(235,235,245,.3);
+  --separator:rgba(84,84,88,.6);
+  --chrome:rgba(22,22,24,.75);
+  --blue:#0A84FF;
+  --green:#30D158;
+  --red:#FF453A;
+  --orange:#FF9F0A;
+  --teal:#40C8E0;
+  --indigo:#5E5CE6;
+  --gray:#98989D;
+  --tint-blue:rgba(10,132,255,.22);
+  --tint-green:rgba(48,209,88,.22);
+  --tint-red:rgba(255,69,58,.2);
+  --tint-orange:rgba(255,159,10,.22);
+  --tint-gray:rgba(120,120,128,.26);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--label);
+  font-family:var(--font);
+  font-size:17px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:64px;
+}
+img{display:block;max-width:100%}
+a{color:var(--blue);text-decoration:none}
+button,input,select,textarea{font-family:var(--font);color:var(--label)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px}
+::selection{background:var(--tint-blue)}
+
+/* ---------- Chrome ---------- */
+.navbar{
+  position:fixed;top:0;left:0;right:0;z-index:40;
+  background:var(--chrome);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  backdrop-filter:blur(20px) saturate(180%);
+}
+.navbar::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
+  background:var(--separator);transform:scaleY(.5);
+  opacity:0;transition:opacity 200ms var(--ease-out);
+}
+.navbar.scrolled::after{opacity:1}
+.nav-inner{
+  max-width:var(--maxw);margin:0 auto;height:52px;padding:0 16px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative;
+}
+.nav-lead{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:600}
+.nav-back{
+  display:inline-flex;align-items:center;gap:2px;flex:none;
+  color:var(--blue);font-size:16px;font-weight:500;text-decoration:none;
+  padding:6px 8px 6px 0;border-radius:8px;margin-right:2px;
+  transition:opacity 120ms var(--ease-out),transform 120ms var(--ease-out);
+}
+.nav-back:active{transform:scale(.96);opacity:.55}
+.nav-back svg{flex:none;margin-top:1px}
+.nav-lead img{width:26px;height:26px;border-radius:7px;background:#fff;object-fit:contain;padding:2px}
+.nav-title{
+  position:absolute;left:50%;transform:translate(-50%,4px);
+  font-size:17px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;
+  opacity:0;transition:opacity 180ms var(--ease-out),transform 180ms var(--ease-out);
+  pointer-events:none;
+}
+.navbar.scrolled .nav-title{opacity:1;transform:translate(-50%,0)}
+.nav-btn{
+  border:none;background:none;cursor:pointer;
+  color:var(--blue);font-size:16px;font-weight:500;padding:6px 2px;border-radius:8px;
+  transition:opacity 120ms var(--ease-out),transform 120ms var(--ease-out);
+}
+.nav-btn:active{transform:scale(.96);opacity:.55}
+.nav-trail{display:flex;align-items:center;gap:12px}
+.nav-icon{
+  position:relative;width:34px;height:34px;flex:none;
+  border:none;border-radius:50%;cursor:pointer;
+  background:var(--fill);color:var(--label);
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:background 140ms var(--ease-out),transform 120ms var(--ease-out);
+}
+.nav-icon:active{transform:scale(.92)}
+@media (hover:hover) and (pointer:fine){.nav-icon:hover{background:var(--fill-2)}}
+.nav-icon svg{
+  position:absolute;width:17px;height:17px;
+  transition:opacity 200ms var(--ease-out),transform 280ms var(--ease-out);
+}
+.nav-icon .ic-sun{opacity:0;transform:rotate(-45deg) scale(.55)}
+.nav-icon .ic-moon{opacity:1;transform:rotate(0deg) scale(1)}
+.nav-icon.is-dark .ic-sun{opacity:1;transform:rotate(0deg) scale(1)}
+.nav-icon.is-dark .ic-moon{opacity:0;transform:rotate(45deg) scale(.55)}
+/* On phones the centered scrolled-in title has no room between the back button
+   and the actions, so it overlaps them. Drop it; the large heading names the page. */
+@media (max-width:640px){.nav-title{display:none}}
+@media (max-width:430px){.nl-txt{display:none}}
+@media (prefers-reduced-transparency:reduce){
+  .navbar{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}
+}
+
+/* ---------- Layout ---------- */
+.shell{max-width:var(--maxw);margin:0 auto;padding:72px 16px 0}
+.lg-title{font-size:34px;font-weight:700;letter-spacing:-.022em;line-height:1.12}
+.lg-sub{font-size:15px;color:var(--secondary);margin-top:4px}
+.sec-h{
+  font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--secondary);padding:26px 16px 8px;
+}
+.sec-note{font-size:13px;color:var(--secondary);padding:8px 16px 0;line-height:1.5}
+
+/* ---------- Section quick-nav chips ---------- */
+.chipnav{
+  position:sticky;top:52px;z-index:30;
+  background:var(--bg);
+  margin:14px -16px 0;padding:10px 16px;
+}
+.chipnav-rail{
+  display:flex;gap:8px;overflow-x:auto;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;
+}
+.chipnav-rail::-webkit-scrollbar{display:none}
+.chipnav a{
+  flex:none;display:inline-flex;align-items:center;gap:7px;
+  min-height:34px;padding:0 14px;border-radius:999px;
+  background:var(--fill);color:var(--secondary);
+  font-size:13.5px;font-weight:600;text-decoration:none;white-space:nowrap;
+  transition:background 160ms var(--ease-out),color 160ms var(--ease-out),transform 120ms var(--ease-out);
+}
+.chipnav a:active{transform:scale(.95)}
+@media (hover:hover) and (pointer:fine){.chipnav a:not(.on):hover{background:var(--fill-2)}}
+.chipnav a.on{background:var(--blue);color:#fff}
+.chip-dot{width:7px;height:7px;border-radius:50%;background:var(--red);flex:none}
+.chipnav a.on .chip-dot{background:#fff}
+[data-anchor]{scroll-margin-top:112px}
+
+/* ---------- Cards & rows ---------- */
+.card{background:var(--card);border-radius:14px;overflow:hidden}
+.card-pad{background:var(--card);border-radius:14px;padding:16px}
+.row{
+  position:relative;display:flex;align-items:center;gap:12px;
+  min-height:46px;padding:11px 16px;
+}
+.row+.row::before{
+  content:'';position:absolute;left:16px;right:0;top:0;height:1px;
+  background:var(--separator);transform:scaleY(.5);
+}
+.row.inset-ava+.row.inset-ava::before{left:64px}
+/* Flush rows sit inside a transparent / nested card and drop the side padding.
+   Keep the hairline aligned to the flushed content edge (0, or past a 36px avatar). */
+.row-flush{padding-left:0;padding-right:0}
+.row-flush+.row-flush::before{left:0}
+.row-flush.inset-ava+.row-flush.inset-ava::before{left:48px}
+.row-main{flex:1;min-width:0}
+.row-title{font-size:16.5px;font-weight:590;letter-spacing:-.01em;line-height:1.3}
+.row-sub{font-size:13.5px;color:var(--secondary);margin-top:1px;line-height:1.4}
+.row-msg{font-size:15px;color:var(--label);margin-top:3px;line-height:1.45}
+.row-tap{cursor:pointer;transition:background 120ms var(--ease-out)}
+.row-tap:active{background:var(--fill)}
+@media (hover:hover) and (pointer:fine){
+  .row-tap:hover{background:var(--fill)}
+}
+.chev{color:var(--tertiary);flex:none}
+
+/* ---------- Icon badges ---------- */
+.ib{
+  width:29px;height:29px;border-radius:7px;flex:none;color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.ib svg{width:17px;height:17px}
+.ib-blue{background:var(--blue)}.ib-red{background:var(--red)}
+.ib-teal{background:var(--teal)}.ib-indigo{background:var(--indigo)}
+.ib-gray{background:var(--gray)}
+
+/* ---------- Chips ---------- */
+.chip{
+  display:inline-flex;align-items:center;gap:5px;flex:none;
+  font-size:12.5px;font-weight:600;letter-spacing:.01em;
+  padding:4px 10px;border-radius:999px;white-space:nowrap;
+}
+.c-green{background:var(--tint-green);color:var(--green)}
+.c-red{background:var(--tint-red);color:var(--red)}
+.c-orange{background:var(--tint-orange);color:var(--orange)}
+.c-blue{background:var(--tint-blue);color:var(--blue)}
+.c-gray{background:var(--tint-gray);color:var(--secondary)}
+.c-red-solid{background:var(--red);color:#fff}
+
+/* ---------- Buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:none;cursor:pointer;border-radius:12px;
+  min-height:50px;padding:0 20px;font-size:17px;font-weight:600;letter-spacing:-.01em;
+  transition:transform 140ms var(--ease-out),opacity 140ms var(--ease-out),background 140ms var(--ease-out),filter 140ms var(--ease-out);
+}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;pointer-events:none}
+.b-filled{background:var(--blue);color:#fff}
+.b-green{background:var(--green);color:#fff}
+.b-tinted{background:var(--tint-blue);color:var(--blue)}
+.b-green-tinted{background:var(--tint-green);color:var(--green)}
+.b-red-tinted{background:var(--tint-red);color:var(--red)}
+.b-gray{background:var(--fill);color:var(--label)}
+.b-sm{min-height:38px;padding:0 14px;font-size:15px;border-radius:10px}
+.b-xs{min-height:32px;padding:0 12px;font-size:13px;font-weight:600;border-radius:8px}
+.b-block{width:100%}
+@media (hover:hover) and (pointer:fine){
+  .btn:hover{filter:brightness(1.06)}
+}
+
+/* ---------- Forms ---------- */
+.f-label{display:block;font-size:13px;font-weight:600;color:var(--secondary);margin:0 0 6px 2px}
+.field{
+  width:100%;min-height:44px;padding:10px 12px;
+  background-color:var(--fill);border:none;border-radius:10px;
+  font-size:16.5px;caret-color:var(--blue);
+  transition:background-color 140ms var(--ease-out);
+  accent-color:var(--blue);
+}
+.field:focus{background-color:var(--fill-2);outline:none}
+.field::placeholder{color:var(--tertiary)}
+textarea.field{resize:vertical;line-height:1.45}
+select.field{
+  -webkit-appearance:none;appearance:none;padding-right:32px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  background-size:12px;
+}
+.f-grid{display:grid;gap:12px}
+.f-2{grid-template-columns:1fr 1fr}
+.f-3{grid-template-columns:1fr 1fr 1fr}
+@media (max-width:600px){.f-2,.f-3{grid-template-columns:1fr}}
+
+/* ---------- Feedback banner ---------- */
+.banner{
+  display:flex;align-items:flex-start;gap:9px;
+  border-radius:12px;padding:11px 13px;margin-top:12px;
+  font-size:14.5px;line-height:1.45;font-weight:500;
+  opacity:1;transform:translateY(0) scale(1);
+  transition:opacity 240ms var(--ease-out),transform 240ms var(--ease-out);
+}
+@starting-style{
+  .banner{opacity:0;transform:translateY(-6px) scale(.985)}
+}
+.banner svg{flex:none;margin-top:2px}
+.bn-green{background:var(--tint-green);color:var(--green)}
+.bn-blue{background:var(--tint-blue);color:var(--blue)}
+.bn-red{background:var(--tint-red);color:var(--red)}
+.bn-red strong,.bn-blue strong,.bn-green strong{font-weight:700}
+
+/* ---------- Progress ---------- */
+.pbar{height:6px;border-radius:3px;background:var(--fill);overflow:hidden}
+.pbar i{
+  display:block;height:100%;border-radius:3px;background:var(--blue);
+  transform:scaleX(var(--p,0));transform-origin:left center;
+  transition:transform 420ms var(--ease-out);
+}
+
+/* ---------- Fee month cells ---------- */
+.fee-cell{text-align:center;border-radius:10px;padding:10px 4px}
+.fee-cell b{display:block;font-size:14px;font-weight:590;letter-spacing:-.01em}
+.fee-cell span{display:block;font-size:12px;font-weight:600}
+.fee-paid{background:var(--tint-green)}.fee-paid span{color:var(--green)}
+.fee-due{background:var(--tint-red)}.fee-due span{color:var(--red)}
+
+/* ---------- Bits ---------- */
+.date-sq{
+  flex:none;width:45px;border-radius:10px;padding:6px 0;text-align:center;color:#fff;
+}
+.date-sq b{display:block;font-size:16px;font-weight:700;line-height:1.05}
+.date-sq span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.06em}
+.ds-red{background:var(--red)}.ds-blue{background:var(--blue)}
+.ds-green{background:var(--green)}.ds-gray{background:var(--gray)}
+.ava{border-radius:50%;object-fit:cover;flex:none}
+.stat-num{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat-lbl{font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.045em;color:var(--secondary)}
+.stat-foot{font-size:13px;color:var(--secondary);margin-top:2px}
+.up{color:var(--green);font-weight:600}
+.warn-foot{font-size:13.5px;color:var(--orange);font-weight:600;display:flex;gap:6px;align-items:flex-start;margin-top:12px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--secondary)}
+.legend i{width:10px;height:10px;border-radius:3px;flex:none}
+.hint{font-size:13px;color:var(--secondary);line-height:1.5}
+
+/* ---------- Attendance bars ---------- */
+.abar-track{position:relative;height:16px;border-radius:5px;background:var(--fill);overflow:visible}
+.abar-track .grid-l{position:absolute;top:0;bottom:0;width:1px;background:var(--separator);transform:scaleX(.7)}
+.abar-track .min-l{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--red);opacity:.6;border-radius:1px}
+.abar{position:absolute;top:0;bottom:0;left:0;border-radius:5px}
+
+/* ---------- Charts ---------- */
+.chart-wrap{width:100%;overflow-x:auto}
+.chart-wrap svg{display:block;width:100%;height:auto}
+.chart-txt{fill:var(--secondary);font-family:var(--font)}
+
+/* ---------- Theme cross-fade (View Transitions API) ----------
+   theme.js drives the light/dark swap through document.startViewTransition on
+   the click path only, so the whole document eases between appearances at the
+   compositor. Ungated browsers just switch instantly. */
+::view-transition-old(root),
+::view-transition-new(root){animation-duration:340ms;animation-timing-function:var(--ease-out)}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}
+  .seg-thumb{transition:none}
+  ::view-transition-old(root),::view-transition-new(root){animation:none !important}
+}

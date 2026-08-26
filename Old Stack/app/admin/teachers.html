@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher Accounts · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.SUPER_ADMIN);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Teacher Accounts</h1>
+    <p>Create and manage teacher sign-ins. Each teacher gets a permanent code and a login. Deactivate rather than delete — a deactivated teacher can’t sign in, but their history and assignments stay intact.</p>
+  </div>
+
+  <section class="card-pad create-card">
+    <h2 class="card-h">New teacher</h2>
+    <p class="card-hint">A permanent teacher code is assigned automatically. The email is their login; share the initial password with them privately.</p>
+    <form id="createForm" novalidate>
+      <div class="f-grid f-3">
+        <label class="fld2"><span class="f-label">Full name</span><input class="field" name="full_name" type="text" placeholder="e.g. Debjani Roy" autocomplete="off"><span class="fe" data-err="full_name"></span></label>
+        <label class="fld2"><span class="f-label">Email (login)</span><input class="field" name="email" type="email" placeholder="name@smartedutrack.in" autocapitalize="off" spellcheck="false"><span class="fe" data-err="email"></span></label>
+        <label class="fld2"><span class="f-label">Phone <span style="font-weight:400;color:var(--tertiary)">· optional</span></span><input class="field" name="phone" type="tel" inputmode="tel" placeholder="98300 00000"><span class="fe" data-err="phone"></span></label>
+      </div>
+      <div class="form-actions"><button class="btn b-filled" type="submit" id="createBtn">Create teacher</button></div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>All teachers</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('admin/teachers.html');
+  var esc=SE.esc, form=document.getElementById('createForm');
+  function activePill(a){ return a?'<span class="pill pill-green">Active</span>':'<span class="pill pill-gray">Inactive</span>'; }
+  function actionBtn(a){ return a?'<button class="btn b-red-tinted b-xs" type="button" data-act="deactivate">Deactivate</button>':'<button class="btn b-tinted b-xs" type="button" data-act="reactivate">Reactivate</button>'; }
+
+  var panel=SE.ui.listPanel({
+    mount:'listBody', count:'listCount',
+    fetch:function(){ return SE.api.teachers.list(); },
+    empty:{title:'No teachers yet', sub:'Create your first teacher account above.', icon:'box'},
+    row:function(t){
+      var sub='<span class="lcode">'+esc(t.teacher_code)+'</span> · '+esc(t.email)+(t.phone?' · '+esc(t.phone):'');
+      return '<div class="row inset-ava" data-id="'+t.id+'"><span class="acct-ava" aria-hidden="true">'+esc(initials(t.full_name))+'</span>'+
+        '<div class="row-main"><p class="row-title">'+esc(t.full_name)+'</p><p class="row-sub">'+sub+'</p></div>'+
+        '<div class="row-acts">'+activePill(t.is_active)+actionBtn(t.is_active)+'</div></div>';
+    },
+    onAction:function(id,act,rowEl){
+      var willActive=(act==='reactivate');
+      function apply(){
+        SE.api.teachers.setActive(id,willActive).then(function(){
+          var p=rowEl.querySelector('.pill'); if(p) p.outerHTML=activePill(willActive);
+          var b=rowEl.querySelector('[data-act]'); if(b) b.outerHTML=actionBtn(willActive);
+          SE.shell.toast('Teacher '+(willActive?'reactivated — they can sign in again.':'deactivated — they can no longer sign in.'));
+        }).catch(function(){ SE.shell.toast('Couldn’t update — try again.'); });
+      }
+      if(willActive) apply();
+      else SE.ui.confirm({title:'Deactivate this teacher?',body:'They can no longer sign in. Their assigned subjects, enrollments and history are preserved.',confirmLabel:'Deactivate',tone:'danger'}).then(function(ok){ if(ok)apply(); });
+    }
+  });
+  function initials(n){ return String(n||'?').trim().split(/\s+/).map(function(w){return w.charAt(0);}).slice(0,2).join('').toUpperCase(); }
+
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    SE.ui.clearErrors(form);
+    var ok=SE.ui.validate(form,{
+      full_name:function(v){ return v?null:'Enter the teacher’s name.'; },
+      email:function(v){ if(!v)return 'Enter a login email.'; if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v))return 'That doesn’t look like an email address.'; return null; },
+      phone:function(v){ if(!v)return null; if(!/^[0-9+\-\s]{7,15}$/.test(v))return 'Enter a valid phone number, or leave it blank.'; return null; }
+    });
+    if(!ok)return;
+    var btn=document.getElementById('createBtn'); btn.disabled=true;
+    SE.api.teachers.create({full_name:form.elements.full_name.value.trim(),email:form.elements.email.value.trim(),phone:form.elements.phone.value.trim()})
+      .then(function(row){ form.reset(); btn.disabled=false; panel.reload(); SE.shell.toast('Teacher created — '+row.teacher_code+'.'); })
+      .catch(function(err){ btn.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t create the teacher.'); });
+  });
+})();
+</script>
+</body>
+</html>

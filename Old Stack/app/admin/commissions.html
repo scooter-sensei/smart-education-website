@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Commission Reports · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.SUPER_ADMIN);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Commission Reports</h1>
+    <p>Each teacher earns 50% of the fees collected for their subjects. This shows what has accrued from payments received — the basis for teacher payouts.</p>
+  </div>
+
+  <div class="kpi-strip kpi-3" id="kpis" aria-label="Commission summary" aria-busy="true">
+    <div class="skel" style="grid-column:1/-1"><div class="skel-row"></div></div>
+  </div>
+
+  <div class="list-tools" role="group" aria-label="Filter by month">
+    <div class="seg" id="segMonth" role="tablist" aria-label="Month"><button type="button" class="on" data-month="" role="tab" aria-selected="true">All</button></div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>By teacher</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('admin/commissions.html');
+  var esc=SE.esc, money=SE.money;
+  var state={month:''};
+  var KB=document.getElementById('kpis'), body=document.getElementById('listBody'), count=document.getElementById('listCount');
+
+  function initials(n){ return String(n||'?').trim().split(/\s+/).map(function(w){return w.charAt(0);}).slice(0,2).join('').toUpperCase(); }
+  function monthLabel(m){ try{ return new Date(m+'-01T00:00:00').toLocaleDateString('en-GB',{month:'short',year:'numeric'}); }catch(e){ return m; } }
+  function cell(label,value,foot){ return '<div class="kpi"><p class="kl">'+esc(label)+'</p><p class="kv">'+value+'</p>'+(foot?'<p class="kf">'+esc(foot)+'</p>':'')+'</div>'; }
+
+  function rowHtml(t){
+    var subj=t.subjects.map(function(s){ return esc(s.subject)+' '+money(s.collected); }).join(' · ');
+    return '<div class="row inset-ava"><span class="acct-ava" aria-hidden="true">'+esc(initials(t.teacher))+'</span>'+
+      '<div class="row-main"><p class="row-title">'+esc(t.teacher)+' · <b style="font-weight:650;color:var(--green)">'+money(t.commission)+'</b></p>'+
+      '<p class="row-sub"><span class="lcode">'+esc(t.teacher_code)+'</span> · commission at '+SE.COMMISSION_RATE+'%</p>'+
+      '<p class="row-sub">Collected '+money(t.collected)+' — '+subj+'</p></div>'+
+      '<div class="row-acts"><span class="chip c-green">'+SE.COMMISSION_RATE+'%</span></div></div>';
+  }
+
+  function render(){
+    body.innerHTML=SE.ui.skeleton(3); count.textContent=''; KB.setAttribute('aria-busy','true');
+    SE.api.commissions.report(state.month?{month:state.month}:{}).then(function(r){
+      KB.setAttribute('aria-busy','false');
+      KB.innerHTML=[
+        cell('Commission accrued', money(r.totalCommission), 'at '+r.rate+'% of collected'),
+        cell('Collected', money(r.totalCollected)),
+        cell('Teachers earning', r.teachers)
+      ].join('');
+      if(!r.rows.length){ body.innerHTML=SE.ui.empty('No commission yet','Commission accrues as payments are collected for teachers’ subjects.','box'); count.textContent='0'; return; }
+      body.innerHTML=r.rows.map(rowHtml).join(''); count.textContent=r.rows.length;
+      for(var i=0;i<body.children.length;i++){ body.children[i].style.setProperty('--i',Math.min(i,12)); body.children[i].classList.add('se-in'); }
+    }).catch(function(){
+      KB.setAttribute('aria-busy','false');
+      body.innerHTML=SE.ui.errorBox('cmRetry'); count.textContent='';
+      var r=document.getElementById('cmRetry'); if(r) r.addEventListener('click',render);
+    });
+  }
+
+  /* month filter */
+  SE.api.commissions.months().then(function(ms){
+    var seg=document.getElementById('segMonth');
+    seg.innerHTML='<button type="button" class="on" data-month="" role="tab" aria-selected="true">All</button>'+
+      ms.map(function(m){ return '<button type="button" data-month="'+esc(m)+'" role="tab" aria-selected="false">'+esc(monthLabel(m))+'</button>'; }).join('');
+    seg.addEventListener('click',function(ev){
+      var b=ev.target.closest('button[data-month]'); if(!b) return;
+      [].forEach.call(seg.children,function(x){ var on=x===b; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); });
+      state.month=b.getAttribute('data-month'); render();
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

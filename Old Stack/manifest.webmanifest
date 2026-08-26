@@ -1,0 +1,15 @@
+{
+  "name": "SmartEduTrack Console",
+  "short_name": "SmartEduTrack",
+  "description": "Staff console for Smart Education Computer Centre — academic sessions, enrollments, attendance, billing and commission.",
+  "id": "./app/login.html",
+  "start_url": "./app/login.html",
+  "scope": "./app/",
+  "display": "standalone",
+  "background_color": "#F2F2F7",
+  "theme_color": "#F2F2F7",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

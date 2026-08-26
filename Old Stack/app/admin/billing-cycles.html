@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Billing Cycles · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.SUPER_ADMIN);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Billing Cycles</h1>
+    <p>Generate a month’s fees for every active enrollment in one step. Each cycle creates a pending fee record per enrollment, priced from Fee Configuration. Close a cycle to lock it once the month is settled.</p>
+  </div>
+
+  <section class="card-pad create-card">
+    <h2 class="card-h">Generate a cycle</h2>
+    <p class="card-hint">Pick a month and generate. Enrollments without a matching active fee are skipped and reported, so you can fix the fee and regenerate. A month can only be generated once.</p>
+    <form id="genForm" novalidate>
+      <div class="f-grid f-2">
+        <label class="fld2"><span class="f-label">Month</span><input class="field" name="month" type="month" id="genMonth"><span class="fe" data-err="month"></span></label>
+        <div class="fld2" style="justify-content:flex-end"><button class="btn b-filled" type="submit" id="genBtn">Generate cycle</button></div>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Cycles</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('admin/billing-cycles.html');
+  var esc=SE.esc, money=SE.money;
+  var byId={};
+
+  document.getElementById('genMonth').value=new Date().toISOString().slice(0,7);
+
+  function statusPill(s){ return s==='OPEN'?'<span class="pill pill-green">Open</span>':'<span class="pill pill-gray">Closed</span>'; }
+  function rowHtml(c){
+    var pct=c.billed>0?Math.round((c.collected/c.billed)*100):0;
+    return '<div class="row" data-id="'+c.id+'"><div class="row-main">'+
+      '<p class="row-title">'+esc(c.label)+'</p>'+
+      '<p class="row-sub">'+c.records+' fee record'+(c.records===1?'':'s')+' · <b style="color:var(--label);font-weight:650">'+money(c.collected)+'</b> collected of '+money(c.billed)+' ('+pct+'%)</p>'+
+      '<p class="row-sub">Generated '+SE.fmtDate(c.generated_at)+' · '+SE.fmtDate(c.period_start)+' – '+SE.fmtDate(c.period_end)+'</p></div>'+
+      '<div class="row-acts">'+statusPill(c.status)+(c.status==='OPEN'?'<button class="btn b-gray b-xs" type="button" data-act="close">Close cycle</button>':'')+'</div></div>';
+  }
+
+  var panel=SE.ui.listPanel({
+    mount:'listBody', count:'listCount',
+    fetch:function(){ return SE.api.billingCycles.list().then(function(list){ byId={}; list.forEach(function(c){byId[c.id]=c;}); return list; }); },
+    empty:{title:'No billing cycles yet', sub:'Generate your first cycle above to bill the current month’s enrollments.', icon:'box'},
+    row:rowHtml,
+    onAction:function(id,act,rowEl){
+      var c=byId[id]; if(!c || act!=='close') return;
+      SE.ui.confirm({title:'Close '+c.label+'?',body:'The cycle is locked — no further changes to its fee records. Payments already recorded stay. You can’t reopen it here.',confirmLabel:'Close cycle'})
+        .then(function(ok){ if(!ok) return;
+          SE.api.billingCycles.close(id).then(function(){ c.status='CLOSED'; rowEl.outerHTML=rowHtml(c); SE.shell.toast(c.label+' is closed.'); })
+            .catch(function(err){ SE.shell.toast((err&&err.message)||'Couldn’t close — try again.'); });
+        });
+    }
+  });
+
+  var form=document.getElementById('genForm');
+  form.addEventListener('submit',function(ev){
+    ev.preventDefault();
+    SE.ui.clearErrors(form);
+    var ok=SE.ui.validate(form,{ month:function(v){ return v?null:'Choose a month to generate.'; } });
+    if(!ok) return;
+    var btn=document.getElementById('genBtn'); btn.disabled=true;
+    SE.api.billingCycles.generate({month:form.elements.month.value})
+      .then(function(res){ btn.disabled=false; panel.reload();
+        var msg=res.cycle.label+' generated — '+res.records+' record'+(res.records===1?'':'s')+', '+money(res.billed)+' billed'+(res.skipped?' · '+res.skipped+' skipped (no fee configured)':'')+'.';
+        SE.shell.toast(msg); })
+      .catch(function(err){ btn.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t generate the cycle.'); });
+  });
+})();
+</script>
+</body>
+</html>

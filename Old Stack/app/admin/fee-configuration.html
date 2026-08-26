@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fee Configuration · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.SUPER_ADMIN);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Fee Configuration</h1>
+    <p>Set the monthly fee for each class and subject. Billing cycles price every enrollment from these. “First month” decides whether a student who joins mid-month pays the full fee or half for their first month.</p>
+  </div>
+
+  <section class="card-pad create-card">
+    <h2 class="card-h">New fee</h2>
+    <p class="card-hint">One active fee per class-and-subject. You can deactivate an old fee and add a new one when the rate changes.</p>
+    <form id="createForm" novalidate>
+      <div class="f-grid f-3">
+        <label class="fld2"><span class="f-label">Class</span><select class="field" name="class" id="feeClass"></select><span class="fe" data-err="class"></span></label>
+        <label class="fld2"><span class="f-label">Subject</span><select class="field" name="subject" id="feeSubject"></select><span class="fe" data-err="subject"></span></label>
+        <label class="fld2"><span class="f-label">Monthly fee (₹)</span><input class="field" name="amount" type="number" min="1" step="1" inputmode="numeric" placeholder="e.g. 1100"><span class="fe" data-err="amount"></span></label>
+        <label class="fld2"><span class="f-label">First month</span><select class="field" name="first_month_billing"><option value="FULL">Full fee</option><option value="HALF">Half fee</option></select><span class="fe" data-err="first_month_billing"></span></label>
+        <label class="fld2"><span class="f-label">Effective from</span><input class="field" name="effective_from" type="date"><span class="fe" data-err="effective_from"></span></label>
+      </div>
+      <div class="form-actions"><button class="btn b-filled" type="submit" id="createBtn">Add fee</button></div>
+    </form>
+  </section>
+
+  <div class="list-tools" role="group" aria-label="Filter fees">
+    <div class="seg" id="segStatus" role="tablist" aria-label="Status">
+      <button type="button" class="on" data-active="" role="tab" aria-selected="true">All</button>
+      <button type="button" data-active="ACTIVE" role="tab" aria-selected="false">Active</button>
+      <button type="button" data-active="INACTIVE" role="tab" aria-selected="false">Inactive</button>
+    </div>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input class="field search" id="searchInput" type="search" placeholder="Search class or subject" autocomplete="off" aria-label="Search fees">
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Fees</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('admin/fee-configuration.html');
+  var esc=SE.esc, money=SE.money;
+  var state={active:'', q:''};
+  var byId={};
+
+  document.getElementById('createForm').elements.effective_from.value=new Date().toISOString().slice(0,10);
+  SE.api.feeConfigs.options().then(function(o){
+    document.getElementById('feeClass').innerHTML='<option value="" disabled selected>Select a class</option>'+o.classes.map(function(c){return '<option value="'+esc(c)+'">'+esc(c)+'</option>';}).join('');
+    document.getElementById('feeSubject').innerHTML='<option value="" disabled selected>Select a subject</option>'+o.subjects.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+'</option>';}).join('');
+  });
+
+  function activePill(a){ return a?'<span class="pill pill-green">Active</span>':'<span class="pill pill-gray">Inactive</span>'; }
+  function actionBtn(a){ return a?'<button class="btn b-red-tinted b-xs" type="button" data-act="deactivate">Deactivate</button>':'<button class="btn b-tinted b-xs" type="button" data-act="reactivate">Reactivate</button>'; }
+  function firstMonth(c){ return c.first_month_billing==='HALF'?'half':'full'; }
+  function rowHtml(c){
+    return '<div class="row" data-id="'+c.id+'"><div class="row-main">'+
+      '<p class="row-title">'+esc(c.class)+' · '+esc(c.subject)+'</p>'+
+      '<p class="row-sub"><b style="color:var(--label);font-weight:650">'+money(c.amount)+'</b> / month · first month '+firstMonth(c)+'</p>'+
+      '<p class="row-sub">Effective '+SE.fmtDate(c.effective_from)+'</p></div>'+
+      '<div class="row-acts">'+activePill(c.is_active)+'<button class="btn b-gray b-xs" type="button" data-act="edit">Edit</button>'+actionBtn(c.is_active)+'</div></div>';
+  }
+
+  var panel=SE.ui.listPanel({
+    mount:'listBody', count:'listCount',
+    fetch:function(){
+      return SE.api.feeConfigs.list(state.active?{active:state.active}:{}).then(function(list){
+        var q=state.q.trim().toLowerCase();
+        if(q) list=list.filter(function(c){ return (c.class+' '+c.subject).toLowerCase().indexOf(q)>=0; });
+        byId={}; list.forEach(function(c){ byId[c.id]=c; });
+        return list;
+      });
+    },
+    empty:{title:'No fees match', sub:'Add a monthly fee for a class and subject above. Billing can’t price an enrollment without one.', icon:'box'},
+    row:rowHtml,
+    onAction:function(id,act,rowEl){
+      var c=byId[id]; if(!c) return;
+      if(act==='edit'){ openEdit(c,rowEl); return; }
+      var willActive=(act==='reactivate');
+      function apply(){
+        SE.api.feeConfigs.setActive(id,willActive).then(function(){
+          c.is_active=willActive;
+          if(state.active) panel.reload(); else rowEl.outerHTML=rowHtml(c);
+          SE.shell.toast('Fee '+(willActive?'reactivated.':'deactivated — new cycles won’t use it.'));
+        }).catch(function(err){ SE.shell.toast((err&&err.message)||'Couldn’t update — try again.'); });
+      }
+      if(willActive) apply();
+      else SE.ui.confirm({title:'Deactivate this fee?',body:c.class+' · '+c.subject+' will no longer price new billing cycles. Records already billed are unchanged.',confirmLabel:'Deactivate',tone:'danger'}).then(function(ok){ if(ok)apply(); });
+    }
+  });
+
+  function openEdit(c,rowEl){
+    var d=document.createElement('dialog'); d.className='se-dialog';
+    var form=document.createElement('form'); form.className='se-dialog-card'; form.setAttribute('novalidate','');
+    form.innerHTML=
+      '<h3>Edit fee</h3>'+
+      '<p class="dlg-desc">'+esc(c.class)+' · '+esc(c.subject)+'. Class and subject identify the fee and can’t change here — deactivate and add a new one instead.</p>'+
+      '<div class="f-grid f-2">'+
+        '<label class="fld2"><span class="f-label">Monthly fee (₹)</span><input class="field" name="amount" type="number" min="1" step="1" inputmode="numeric" value="'+esc(c.amount)+'"><span class="fe" data-err="amount"></span></label>'+
+        '<label class="fld2"><span class="f-label">First month</span><select class="field" name="first_month_billing"><option value="FULL"'+(c.first_month_billing!=='HALF'?' selected':'')+'>Full fee</option><option value="HALF"'+(c.first_month_billing==='HALF'?' selected':'')+'>Half fee</option></select></label>'+
+        '<label class="fld2" style="grid-column:1/-1"><span class="f-label">Effective from</span><input class="field" name="effective_from" type="date" value="'+esc(c.effective_from)+'"><span class="fe" data-err="effective_from"></span></label>'+
+      '</div>'+
+      '<div class="se-dialog-acts">'+
+        '<button class="btn b-gray b-sm" type="button" data-x="cancel">Cancel</button>'+
+        '<button class="btn b-filled b-sm" type="button" data-x="ok">Save changes</button>'+
+      '</div>';
+    d.appendChild(form); document.body.appendChild(d);
+    function dismiss(){ try{d.close();}catch(x){} d.remove(); }
+    d.addEventListener('cancel',function(ev){ ev.preventDefault(); dismiss(); });
+    form.querySelector('[data-x="cancel"]').addEventListener('click',dismiss);
+    var okBtn=form.querySelector('[data-x="ok"]');
+    okBtn.addEventListener('click',function(){
+      SE.ui.clearErrors(form);
+      var ok=SE.ui.validate(form,{ amount:function(v){ return (+v>0)?null:'Enter a monthly fee greater than zero.'; } });
+      if(!ok) return;
+      okBtn.disabled=true;
+      SE.api.feeConfigs.update(c.id,{amount:form.elements.amount.value,first_month_billing:form.elements.first_month_billing.value,effective_from:form.elements.effective_from.value})
+        .then(function(u){ c.amount=u.amount; c.first_month_billing=u.first_month_billing; c.effective_from=u.effective_from; dismiss(); rowEl.outerHTML=rowHtml(c); SE.shell.toast('Fee updated — '+c.class+' · '+c.subject+'.'); })
+        .catch(function(err){ okBtn.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t save — try again.'); });
+    });
+    d.showModal();
+    var f=form.querySelector('input,select'); if(f) f.focus();
+  }
+
+  /* filter + search */
+  var seg=document.getElementById('segStatus');
+  seg.addEventListener('click',function(ev){
+    var b=ev.target.closest('button[data-active]'); if(!b) return;
+    [].forEach.call(seg.children,function(x){ var on=x===b; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); });
+    state.active=b.getAttribute('data-active'); panel.reload();
+  });
+  var searchInput=document.getElementById('searchInput'), st;
+  searchInput.addEventListener('input',function(){ clearTimeout(st); st=setTimeout(function(){ state.q=searchInput.value; panel.reload(); },200); });
+
+  /* create */
+  var form=document.getElementById('createForm');
+  form.addEventListener('submit',function(ev){
+    ev.preventDefault();
+    SE.ui.clearErrors(form);
+    var ok=SE.ui.validate(form,{
+      'class':function(v){ return v?null:'Choose a class.'; },
+      subject:function(v){ return v?null:'Choose a subject.'; },
+      amount:function(v){ if(!v)return 'Enter a monthly fee.'; return (+v>0)?null:'Enter a fee greater than zero.'; }
+    });
+    if(!ok) return;
+    var btn=document.getElementById('createBtn'); btn.disabled=true;
+    SE.api.feeConfigs.create({'class':form.elements['class'].value,subject:form.elements.subject.value,amount:form.elements.amount.value,first_month_billing:form.elements.first_month_billing.value,effective_from:form.elements.effective_from.value})
+      .then(function(row){ form.reset(); document.getElementById('feeClass').selectedIndex=0; document.getElementById('feeSubject').selectedIndex=0; form.elements.effective_from.value=new Date().toISOString().slice(0,10); btn.disabled=false; panel.reload(); SE.shell.toast('Fee added — '+row.class+' · '+row.subject+' at '+money(row.amount)+'.'); })
+      .catch(function(err){ btn.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t add the fee.'); });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enrollments · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.SUPER_ADMIN);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Enrollments</h1>
+    <p>An enrollment ties a student to one teacher for one subject — it’s what billing cycles hang off. Teachers request them and you approve; you can also enroll a student directly. Deactivating keeps billing through the current cycle, then stops (that’s the “ending” state), so nothing is cut off mid-cycle.</p>
+  </div>
+
+  <section class="card-pad create-card">
+    <h2 class="card-h">New enrollment</h2>
+    <p class="card-hint">Enroll an active student with a teacher for a subject. An enrollment you create here is active immediately and bills from the current cycle.</p>
+    <form id="createForm" novalidate>
+      <div class="f-grid f-2">
+        <label class="fld2"><span class="f-label">Student</span><select class="field" name="student_id" id="enrStudent"></select><span class="fe" data-err="student_id"></span></label>
+        <label class="fld2"><span class="f-label">Teacher — subject</span><select class="field" name="ts_id" id="enrAuth"></select><span class="fe" data-err="ts_id"></span></label>
+      </div>
+      <div class="form-actions"><button class="btn b-filled" type="submit" id="createBtn">Create enrollment</button></div>
+    </form>
+  </section>
+
+  <div class="list-tools" role="group" aria-label="Filter enrollments">
+    <div class="seg" id="segStatus" role="tablist" aria-label="Status">
+      <button type="button" class="on" data-status="" role="tab" aria-selected="true">All</button>
+      <button type="button" data-status="PENDING" role="tab" aria-selected="false">Pending</button>
+      <button type="button" data-status="ACTIVE" role="tab" aria-selected="false">Active</button>
+      <button type="button" data-status="PENDING_DEACTIVATION" role="tab" aria-selected="false">Ending</button>
+      <button type="button" data-status="INACTIVE" role="tab" aria-selected="false">Inactive</button>
+    </div>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input class="field search" id="searchInput" type="search" placeholder="Search student, subject or teacher" autocomplete="off" aria-label="Search enrollments">
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Enrollments</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('admin/enrollments.html');
+  var esc=SE.esc, fmtDate=SE.fmtDate;
+  var state={status:'', q:''};
+  var byId={};
+  var authById={};
+
+  function initials(n){ return String(n||'?').trim().split(/\s+/).map(function(w){return w.charAt(0);}).slice(0,2).join('').toUpperCase(); }
+
+  /* ---- options for the create form + reassign dialog ---- */
+  function fillSelect(id,items,placeholder){
+    var sel=document.getElementById(id);
+    sel.innerHTML='<option value="" disabled selected>'+esc(placeholder)+'</option>'+
+      items.map(function(it){ return '<option value="'+esc(it.id)+'">'+esc(it.label)+'</option>'; }).join('');
+  }
+  SE.api.enrollments.options().then(function(o){
+    o.authorizations.forEach(function(a){ authById[a.id]=a; });
+    fillSelect('enrStudent',o.students,'Select a student');
+    fillSelect('enrAuth',o.authorizations,'Select teacher — subject');
+    authOptions=o.authorizations;
+  });
+  var authOptions=[];
+
+  /* ---- row rendering ---- */
+  function contextLine(e){
+    switch(e.status){
+      case 'PENDING':               return 'Requested by '+esc(e.requested_by||'a teacher')+' · '+fmtDate(e.created_at);
+      case 'ACTIVE':                return 'Active since '+fmtDate(e.created_at);
+      case 'PENDING_DEACTIVATION':  return 'Winds down at the end of the current billing cycle';
+      case 'INACTIVE':              return 'Ended '+fmtDate(e.reviewed_at||e.created_at);
+      case 'REJECTED':              return 'Rejected '+fmtDate(e.reviewed_at||e.created_at);
+      default:                      return fmtDate(e.created_at);
+    }
+  }
+  function btn(act,cls,label){ return '<button class="btn '+cls+' b-xs" type="button" data-act="'+act+'">'+label+'</button>'; }
+  function actionsFor(e){
+    switch(e.status){
+      case 'PENDING':               return btn('approve','b-green-tinted','Approve')+btn('reject','b-red-tinted','Reject')+btn('change','b-gray','Change');
+      case 'ACTIVE':                return btn('change','b-gray','Change')+btn('deactivate','b-red-tinted','Deactivate');
+      case 'PENDING_DEACTIVATION':  return btn('cancel','b-tinted','Keep active')+btn('end','b-red-tinted','End now');
+      case 'INACTIVE':              return btn('reactivate','b-green-tinted','Reactivate');
+      default:                      return '';
+    }
+  }
+  function rowHtml(e){
+    return '<div class="row inset-ava" data-id="'+e.id+'">'+
+      '<span class="acct-ava" aria-hidden="true">'+esc(initials(e.student))+'</span>'+
+      '<div class="row-main">'+
+        '<p class="row-title">'+esc(e.student)+'</p>'+
+        '<p class="row-sub"><span class="lcode">'+esc(e.student_code)+'</span> · '+esc(e.subject)+' · '+esc(e.teacher)+'</p>'+
+        '<p class="row-sub">'+esc(e.session)+' · '+contextLine(e)+'</p>'+
+      '</div>'+
+      '<div class="row-acts">'+SE.statusPill('enrollment',e.status).outerHTML+actionsFor(e)+'</div></div>';
+  }
+
+  var panel=SE.ui.listPanel({
+    mount:'listBody', count:'listCount',
+    fetch:function(){
+      return SE.api.enrollments.list(state.status?{status:state.status}:{}).then(function(list){
+        var q=state.q.trim().toLowerCase();
+        if(q) list=list.filter(function(e){
+          return [e.student,e.student_code,e.subject,e.teacher].some(function(f){ return (f||'').toLowerCase().indexOf(q)>=0; });
+        });
+        byId={}; list.forEach(function(e){ byId[e.id]=e; });
+        return list;
+      });
+    },
+    empty:{title:'No enrollments match', sub:'Adjust the filter or search above. New requests from teachers appear here as “Pending”.', icon:'box'},
+    row:rowHtml,
+    onAction:function(id,act,rowEl){
+      var e=byId[id]; if(!e) return;
+      if(act==='change'){ openReassign(e,rowEl); return; }
+      if(act==='approve') confirmDo(e,rowEl,'approve',{title:'Approve this enrollment?',body:esc(e.student)+' is enrolled for '+esc(e.subject)+' with '+esc(e.teacher)+', and billing starts from the current cycle.',confirmLabel:'Approve'}, e.student+' enrolled for '+e.subject+'.');
+      else if(act==='reject') confirmDo(e,rowEl,'reject',{title:'Reject this request?',body:'No enrollment is created for '+esc(e.student)+'. The request is kept in history.',confirmLabel:'Reject',tone:'danger'}, e.student+'’s request was rejected.');
+      else if(act==='deactivate') confirmDo(e,rowEl,'deactivate',{title:'Deactivate this enrollment?',body:'It keeps billing through the current cycle, then stops. You can cancel this any time before the cycle ends.',confirmLabel:'Deactivate',tone:'danger'}, e.student+'’s '+e.subject+' enrollment will end after this cycle.');
+      else if(act==='end') confirmDo(e,rowEl,'end',{title:'End this enrollment now?',body:'It stops immediately, before the current cycle ends. Its history is preserved.',confirmLabel:'End now',tone:'danger'}, e.student+'’s '+e.subject+' enrollment ended.');
+      else if(act==='reactivate') confirmDo(e,rowEl,'reactivate',{title:'Reactivate this enrollment?',body:esc(e.student)+' is enrolled again for '+esc(e.subject)+', billing from the current cycle.',confirmLabel:'Reactivate'}, e.student+'’s '+e.subject+' enrollment is active again.');
+      else if(act==='cancel') justDo(e,rowEl,'cancelDeactivation', e.student+'’s '+e.subject+' enrollment stays active.');
+    }
+  });
+
+  function afterChange(e,rowEl){ if(state.status) panel.reload(); else rowEl.outerHTML=rowHtml(e); }
+
+  function confirmDo(e,rowEl,method,dialog,okMsg){
+    SE.ui.confirm(dialog).then(function(ok){
+      if(!ok) return;
+      SE.api.enrollments[method](e.id).then(function(res){ if(res&&res.status) e.status=res.status; afterChange(e,rowEl); SE.shell.toast(okMsg); })
+        .catch(function(err){ SE.shell.toast((err&&err.message)||'That didn’t go through — try again.'); });
+    });
+  }
+  function justDo(e,rowEl,method,okMsg){
+    SE.api.enrollments[method](e.id).then(function(res){ if(res&&res.status) e.status=res.status; afterChange(e,rowEl); SE.shell.toast(okMsg); })
+      .catch(function(err){ SE.shell.toast((err&&err.message)||'That didn’t go through — try again.'); });
+  }
+
+  /* ---- change teacher-subject (reassign the authorisation) ---- */
+  function openReassign(e,rowEl){
+    if(!authOptions.length){ SE.shell.toast('Loading authorisations — try again in a moment.'); return; }
+    var d=document.createElement('dialog'); d.className='se-dialog';
+    var card=document.createElement('form'); card.className='se-dialog-card'; card.setAttribute('novalidate','');
+    var opts=authOptions.map(function(a){ return '<option value="'+esc(a.id)+'"'+(a.id===e.ts_id?' selected':'')+'>'+esc(a.label)+'</option>'; }).join('');
+    card.innerHTML=
+      '<h3>Change teacher — subject</h3>'+
+      '<p class="dlg-desc"><span class="lcode">'+esc(e.student_code)+'</span> '+esc(e.student)+' is currently on '+esc(e.subject)+' with '+esc(e.teacher)+'. Reassign to a different authorised teacher-subject.</p>'+
+      '<div class="f-grid" style="margin-top:16px">'+
+        '<label class="fld2"><span class="f-label">Teacher — subject</span><select class="field" name="ts_id">'+opts+'</select></label>'+
+      '</div>'+
+      '<div class="se-dialog-acts">'+
+        '<button class="btn b-gray b-sm" type="button" data-x="cancel">Cancel</button>'+
+        '<button class="btn b-filled b-sm" type="button" data-x="ok">Save change</button>'+
+      '</div>';
+    d.appendChild(card); document.body.appendChild(d);
+    function dismiss(){ try{d.close();}catch(x){} d.remove(); }
+    d.addEventListener('cancel',function(ev){ ev.preventDefault(); dismiss(); });
+    card.querySelector('[data-x="cancel"]').addEventListener('click',dismiss);
+    var okBtn=card.querySelector('[data-x="ok"]');
+    okBtn.addEventListener('click',function(){
+      var tsId=+card.elements.ts_id.value;
+      okBtn.disabled=true;
+      SE.api.enrollments.changeAssignment(e.id,tsId).then(function(){
+        var a=authById[tsId]; if(a){ e.ts_id=tsId; e.subject=a.subject; e.teacher=a.teacher; }
+        dismiss(); rowEl.outerHTML=rowHtml(e); SE.shell.toast(e.student+' reassigned to '+e.subject+' with '+e.teacher+'.');
+      }).catch(function(err){ okBtn.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t change — try again.'); });
+    });
+    d.showModal();
+    var f=card.querySelector('select'); if(f) f.focus();
+  }
+
+  /* ---- filter + search ---- */
+  var seg=document.getElementById('segStatus');
+  seg.addEventListener('click',function(ev){
+    var b=ev.target.closest('button[data-status]'); if(!b) return;
+    [].forEach.call(seg.children,function(x){ var on=x===b; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); });
+    state.status=b.getAttribute('data-status'); panel.reload();
+  });
+  var searchInput=document.getElementById('searchInput'), st;
+  searchInput.addEventListener('input',function(){ clearTimeout(st); st=setTimeout(function(){ state.q=searchInput.value; panel.reload(); },200); });
+
+  /* ---- create ---- */
+  var form=document.getElementById('createForm');
+  form.addEventListener('submit',function(ev){
+    ev.preventDefault();
+    SE.ui.clearErrors(form);
+    var ok=SE.ui.validate(form,{
+      student_id:function(v){ return v?null:'Choose a student.'; },
+      ts_id:function(v){ return v?null:'Choose a teacher-subject.'; }
+    });
+    if(!ok) return;
+    var btnEl=document.getElementById('createBtn'); btnEl.disabled=true;
+    SE.api.enrollments.create({student_id:form.elements.student_id.value,ts_id:form.elements.ts_id.value})
+      .then(function(row){ form.reset(); btnEl.disabled=false; if(state.status&&state.status!=='ACTIVE'){ /* jump to All so the new active row is visible */ selectStatus(''); } else { panel.reload(); } SE.shell.toast('Enrollment created — '+row.student+' · '+row.subject+'.'); })
+      .catch(function(err){ btnEl.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t create the enrollment.'); });
+  });
+  function selectStatus(v){
+    [].forEach.call(seg.children,function(x){ var on=x.getAttribute('data-status')===v; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); });
+    state.status=v; panel.reload();
+  }
+})();
+</script>
+</body>
+</html>

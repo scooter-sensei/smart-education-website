@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reports · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.SUPER_ADMIN);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Reports</h1>
+    <p>A live snapshot of the centre — collections, dues, commission and enrollments, all derived from the same records as the operational screens, so the numbers always tie out.</p>
+  </div>
+
+  <div class="kpi-strip" id="kpis" aria-label="Centre summary" aria-busy="true">
+    <div class="skel" style="grid-column:1/-1"><div class="skel-row"></div><div class="skel-row"></div></div>
+  </div>
+
+  <section class="panel" aria-labelledby="enrH">
+    <div class="panel-head"><h2 id="enrH">Enrollments by status</h2></div>
+    <div id="enrBody" class="rpt-pills"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="cycH">
+    <div class="panel-head"><h2 id="cycH">Collections by cycle</h2><span class="count" id="cycCount"></span></div>
+    <div id="cycBody"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="comH">
+    <div class="panel-head"><h2 id="comH">Commission by teacher</h2><span class="count" id="comCount"></span></div>
+    <div id="comBody"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="dueH">
+    <div class="panel-head"><h2 id="dueH">Top dues</h2><span class="count" id="dueCount"></span></div>
+    <div id="dueBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('admin/reports.html');
+  var esc=SE.esc, money=SE.money;
+  var KB=document.getElementById('kpis');
+
+  function initials(n){ return String(n||'?').trim().split(/\s+/).map(function(w){return w.charAt(0);}).slice(0,2).join('').toUpperCase(); }
+  function cell(label,value,foot,cls){ return '<div class="kpi"><p class="kl">'+esc(label)+'</p><p class="kv">'+value+'</p>'+(foot?'<p class="kf'+(cls?' '+cls:'')+'">'+esc(foot)+'</p>':'')+'</div>'; }
+  function stagger(b){ for(var i=0;i<b.children.length;i++){ b.children[i].style.setProperty('--i',Math.min(i,12)); b.children[i].classList.add('se-in'); } }
+  var TONE={ACTIVE:'green',PENDING:'amber',PENDING_DEACTIVATION:'amber',INACTIVE:'gray',REJECTED:'red'};
+  function humanize(v){ return String(v).toLowerCase().replace(/_/g,' ').replace(/^\w/,function(c){return c.toUpperCase();}); }
+
+  function render(){
+    KB.setAttribute('aria-busy','true');
+    document.getElementById('cycBody').innerHTML=SE.ui.skeleton(3);
+    document.getElementById('comBody').innerHTML=SE.ui.skeleton(2);
+    document.getElementById('dueBody').innerHTML=SE.ui.skeleton(3);
+    SE.api.reports.overview().then(function(o){
+      var k=o.kpis;
+      KB.setAttribute('aria-busy','false');
+      KB.innerHTML=[
+        cell('Collected · all cycles', money(k.totalCollected), k.collectionRate+'% of '+money(k.totalBilled)+' billed', 'pos'),
+        cell('Outstanding dues', money(k.dueTotal), null, 'warn'),
+        cell('Commission accrued', money(k.totalCommission), 'at '+SE.COMMISSION_RATE+'% of collected'),
+        cell('Active enrollments', k.activeEnrollments, k.activeStudents+' active students')
+      ].join('');
+
+      /* enrollments by status */
+      var order=['ACTIVE','PENDING','PENDING_DEACTIVATION','INACTIVE','REJECTED'];
+      document.getElementById('enrBody').innerHTML=order.filter(function(s){return o.enrollmentsByStatus[s];})
+        .map(function(s){ return '<span class="pill pill-'+(TONE[s]||'gray')+'">'+esc(humanize(s))+' · '+o.enrollmentsByStatus[s]+'</span>'; }).join('') ||
+        '<span class="rpt-none">No enrollments yet.</span>';
+
+      /* collections by cycle */
+      var cb=document.getElementById('cycBody');
+      cb.innerHTML=o.cycles.map(function(c){
+        var pct=c.billed>0?Math.round(c.collected/c.billed*100):0;
+        return '<div class="row"><div class="row-main"><p class="row-title">'+esc(c.label)+'</p>'+
+          '<p class="row-sub">'+c.records+' record'+(c.records===1?'':'s')+' · <b style="color:var(--label);font-weight:650">'+money(c.collected)+'</b> of '+money(c.billed)+'</p></div>'+
+          '<div class="row-acts"><span class="pill pill-'+(c.status==='OPEN'?'green':'gray')+'">'+(c.status==='OPEN'?'Open':'Closed')+'</span><span class="lcode">'+pct+'%</span></div></div>';
+      }).join('');
+      document.getElementById('cycCount').textContent=o.cycles.length;
+      stagger(cb);
+
+      /* commission by teacher */
+      var mb=document.getElementById('comBody');
+      if(!o.teachers.length){ mb.innerHTML=SE.ui.empty('No commission yet','It accrues as fees are collected for teachers’ subjects.','box'); document.getElementById('comCount').textContent='0'; }
+      else { mb.innerHTML=o.teachers.map(function(t){
+        return '<div class="row inset-ava"><span class="acct-ava" aria-hidden="true">'+esc(initials(t.teacher))+'</span>'+
+          '<div class="row-main"><p class="row-title">'+esc(t.teacher)+' · <b style="font-weight:650;color:var(--green)">'+money(t.commission)+'</b></p>'+
+          '<p class="row-sub"><span class="lcode">'+esc(t.teacher_code)+'</span> · paid '+money(t.paid)+' · payable '+money(t.payable)+'</p></div></div>';
+      }).join(''); document.getElementById('comCount').textContent=o.teachers.length; stagger(mb); }
+
+      /* top dues */
+      var db=document.getElementById('dueBody');
+      if(!o.topDebtors.length){ db.innerHTML=SE.ui.empty('Nothing outstanding','Every generated fee has been paid.','check'); document.getElementById('dueCount').textContent='0'; }
+      else { db.innerHTML=o.topDebtors.map(function(d){
+        return '<div class="row inset-ava"><span class="acct-ava" aria-hidden="true">'+esc(initials(d.student))+'</span>'+
+          '<div class="row-main"><p class="row-title">'+esc(d.student)+' · <b style="font-weight:650;color:var(--red)">'+money(d.total)+'</b></p>'+
+          '<p class="row-sub"><span class="lcode">'+esc(d.student_code)+'</span></p></div></div>';
+      }).join(''); document.getElementById('dueCount').textContent=o.topDebtors.length; stagger(db); }
+    }).catch(function(){
+      KB.setAttribute('aria-busy','false');
+      document.getElementById('cycBody').innerHTML=SE.ui.errorBox('rptRetry');
+      var r=document.getElementById('rptRetry'); if(r) r.addEventListener('click',render);
+    });
+  }
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher · Smart Education</title>
+<link rel="icon" href="../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/logo.jpeg">
+<link rel="stylesheet" href="../portal.css">
+<script src="../theme.js"></script>
+<script defer src="../translate.js"></script>
+</head>
+<body>
+<!-- LEGACY: pre-SmartEduTrack portal. Kept as reference; replaced screen-by-screen in later phases. Not linked from the live site. -->
+
+<header class="navbar" id="navbar">
+  <div class="nav-inner">
+    <span class="nav-lead">
+      <a class="nav-back" href="../index.html" aria-label="Back to the home page">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        Home
+      </a>
+      <img src="../assets/logo.jpeg" alt="Smart Education logo"><span class="nl-txt">Teacher Portal</span>
+    </span>
+    <span class="nav-title" id="navTitle">Udayan Choudhury</span>
+    <span class="nav-trail">
+      <button class="nav-icon" id="themeBtn" type="button" aria-pressed="false" aria-label="Switch to dark appearance">
+        <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <a class="nav-btn" href="../app/login.html">Log out</a>
+    </span>
+  </div>
+</header>
+
+<main class="shell">
+  <div style="display:flex;align-items:center;gap:14px">
+    <img class="ava" src="../assets/teachers/udayan-choudhury.png" alt="Udayan Choudhury" width="56" height="56" style="box-shadow:0 0 0 2px var(--card),0 0 0 3.5px var(--blue)">
+    <div>
+      <h1 class="lg-title" style="font-size:28px" id="lgTitle">Hello, Udayan</h1>
+      <p class="lg-sub" id="lgSub">Python · C Programming · Thursday, 9 July 2026</p>
+    </div>
+  </div>
+
+  <nav class="chipnav" aria-label="Jump to section">
+    <div class="chipnav-rail" id="chipRail">
+      <a href="#attendance" class="on">Attendance</a>
+      <a href="#homework">Homework</a>
+      <a href="#marks">Marks</a>
+      <a href="#courses">Courses</a>
+      <a href="#dates">Dates</a>
+      <a href="#students">Students</a>
+      <a href="#insights">Insights</a>
+      <a href="#announce">Announce</a>
+      <a href="#salary">Salary</a>
+    </div>
+  </nav>
+
+  <!-- Mark attendance -->
+  <h2 class="sec-h" id="attendance" data-anchor>Mark attendance · Python, 4:00 pm today</h2>
+  <section class="card" id="attCard"></section>
+  <p class="sec-note">Tap Present or Absent next to each student, then save.</p>
+  <div style="padding:10px 0 0">
+    <button class="btn b-filled" type="button" id="saveAttBtn">Save today’s attendance</button>
+  </div>
+  <div id="attBanner"></div>
+
+  <!-- Assign homework -->
+  <h2 class="sec-h" id="homework" data-anchor>Assign homework</h2>
+  <section class="card-pad">
+    <p class="hint" style="margin-bottom:14px">Choose the batch, write the task, pick a due date, then press Assign. Every student in the batch sees it instantly.</p>
+    <div class="f-grid f-3" style="margin-bottom:14px">
+      <label><span class="f-label">Batch</span>
+        <select class="field"><option>Python (Beginner batch)</option><option>C Programming (Evening batch)</option></select>
+      </label>
+      <label><span class="f-label">Homework task</span>
+        <input class="field" type="text" placeholder="Example: Write a program that prints 1 to 100">
+      </label>
+      <label><span class="f-label">Due date</span>
+        <input class="field" type="date">
+      </label>
+    </div>
+    <button class="btn b-filled" type="button" id="assignBtn">Assign homework</button>
+    <div id="hwBanner"></div>
+  </section>
+
+  <!-- Enter / upload test marks -->
+  <h2 class="sec-h" id="marks" data-anchor>Enter test marks</h2>
+  <section class="card-pad">
+    <p class="hint" style="margin-bottom:14px">Set up the test, type each student’s marks, then Save. Students and parents see the result and grade instantly. Prefer paper? Upload a scanned marksheet instead.</p>
+    <div class="f-grid" style="grid-template-columns:1.5fr 1fr .7fr 1fr;margin-bottom:16px" id="testForm">
+      <label><span class="f-label">Batch</span>
+        <select class="field" id="mkBatch"><option>Python (Beginner batch)</option><option>C Programming (Evening batch)</option></select>
+      </label>
+      <label><span class="f-label">Test name</span>
+        <input class="field" id="mkName" type="text" placeholder="e.g. Unit Test 2 — Loops">
+      </label>
+      <label><span class="f-label">Out of</span>
+        <input class="field" id="mkMax" type="number" inputmode="numeric" min="1" max="1000" value="100">
+      </label>
+      <label><span class="f-label">Test date</span>
+        <input class="field" id="mkDate" type="date">
+      </label>
+    </div>
+    <section class="card" id="marksCard" style="background:var(--fill);border-radius:12px"></section>
+    <div class="mk-summary" id="mkSummary"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding-top:14px">
+      <button class="btn b-filled" type="button" id="saveMarksBtn">Save marks</button>
+      <label class="btn b-gray mk-upload" for="mkFile" tabindex="0" role="button">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        Upload marksheet
+        <input id="mkFile" type="file" accept="image/*,.pdf" hidden>
+      </label>
+      <span class="mk-file-name" id="mkFileName" aria-live="polite"></span>
+    </div>
+    <div id="mkBanner"></div>
+  </section>
+
+  <!-- Courses & chapters -->
+  <h2 class="sec-h" id="courses" data-anchor>My courses · mark chapters complete</h2>
+  <p class="sec-note" style="padding-top:0;padding-bottom:8px">Tap a chapter when you finish teaching it. Students see the progress on their dashboard.</p>
+  <div class="f-grid f-2">
+    <section class="card-pad course">
+      <p class="row-title" style="margin-bottom:10px">Python (Beginner batch)</p>
+      <div class="pbar"><i></i></div>
+      <p class="hint prog-lbl" style="margin:8px 0 12px"></p>
+      <div class="chapters" style="display:flex;flex-direction:column;gap:6px">
+        <button type="button" class="chap done">1. Getting started with Python</button>
+        <button type="button" class="chap done">2. Variables &amp; data types</button>
+        <button type="button" class="chap done">3. If-else decisions</button>
+        <button type="button" class="chap done">4. Loops</button>
+        <button type="button" class="chap">5. Functions</button>
+        <button type="button" class="chap">6. Lists &amp; dictionaries</button>
+      </div>
+    </section>
+    <section class="card-pad course">
+      <p class="row-title" style="margin-bottom:10px">C Programming (Evening batch)</p>
+      <div class="pbar"><i></i></div>
+      <p class="hint prog-lbl" style="margin:8px 0 12px"></p>
+      <div class="chapters" style="display:flex;flex-direction:column;gap:6px">
+        <button type="button" class="chap done">1. Introduction &amp; compilers</button>
+        <button type="button" class="chap done">2. Variables &amp; operators</button>
+        <button type="button" class="chap">3. Control flow</button>
+        <button type="button" class="chap">4. Arrays</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Revision & test dates -->
+  <h2 class="sec-h" id="dates" data-anchor>Set revision &amp; test dates</h2>
+  <section class="card-pad">
+    <p class="hint" style="margin-bottom:14px">Pick the batch, choose Revision or Test, pick the date, then press Add. It appears on every student’s calendar.</p>
+    <div class="f-grid" style="grid-template-columns:1.4fr 1fr 1fr auto;margin-bottom:18px" id="schedForm">
+      <label><span class="f-label">Batch</span>
+        <select class="field" id="schCourse"><option>Python (Beginner batch)</option><option>C Programming (Evening batch)</option></select>
+      </label>
+      <label><span class="f-label">Type</span>
+        <select class="field" id="schType"><option>Revision</option><option>Test</option></select>
+      </label>
+      <label><span class="f-label">Date</span>
+        <input class="field" type="date" id="schDate">
+      </label>
+      <div style="display:flex;align-items:flex-end">
+        <button class="btn b-tinted" type="button" id="schAdd" style="min-height:44px">Add</button>
+      </div>
+    </div>
+    <p class="f-label" style="margin-bottom:6px">Scheduled dates</p>
+    <div class="card" style="background:var(--fill);border-radius:12px" id="schedList"></div>
+  </section>
+
+  <!-- My students -->
+  <h2 class="sec-h" id="students" data-anchor>My students</h2>
+  <section class="card" id="studentCard"></section>
+  <p class="sec-note">Call parent phones a student’s family. Remove takes a student out of your batch; accounts themselves are created only by the office.</p>
+  <section class="card-pad" style="margin-top:10px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <input class="field" type="text" id="newStudentId" placeholder="Type a Student ID, e.g. SE-2026-081" style="flex:1;min-width:220px" autocapitalize="characters" spellcheck="false">
+      <button class="btn b-filled" type="button" id="addStudentBtn" style="min-height:44px">Add student</button>
+    </div>
+    <div id="addBanner"></div>
+  </section>
+
+  <!-- Attendance per student -->
+  <h2 class="sec-h" id="insights" data-anchor>Attendance per student</h2>
+  <section class="card-pad">
+    <p class="hint" style="margin-bottom:10px">This term. The red line marks the institute minimum of 75%; for students below it, consider calling the parent.</p>
+    <div class="legend" style="margin:0 0 16px">
+      <span><i style="background:var(--green)"></i>90%+ excellent</span>
+      <span><i style="background:var(--blue)"></i>75–89% regular</span>
+      <span><i style="background:var(--red)"></i>Below 75% · at risk</span>
+    </div>
+    <div id="barsWrap" style="display:flex;flex-direction:column;gap:12px;max-width:640px"></div>
+  </section>
+
+  <!-- Announcement -->
+  <h2 class="sec-h" id="announce" data-anchor>Make an announcement</h2>
+  <section class="card-pad">
+    <p class="hint" style="margin-bottom:14px">Write your message and press Send. It appears on your students’ dashboards and is sent by SMS to parents.</p>
+    <div class="f-grid" style="margin-bottom:14px">
+      <label><span class="f-label">Send to</span>
+        <select class="field"><option>Both my batches</option><option>Python (Beginner batch)</option><option>C Programming (Evening batch)</option></select>
+      </label>
+      <label><span class="f-label">Message</span>
+        <textarea class="field" rows="3" placeholder="Example: Saturday’s class will start 30 minutes early, at 3:30 pm."></textarea>
+      </label>
+    </div>
+    <button class="btn b-filled" type="button" id="annBtn">Send announcement</button>
+    <div id="annBanner"></div>
+  </section>
+
+  <!-- Payments -->
+  <h2 class="sec-h" id="salary" data-anchor>Payments from the administrator</h2>
+  <section class="card">
+    <div class="row"><div class="row-main"><p class="row-title">April 2026</p><p class="row-sub">₹18,000</p></div><span class="chip c-green">Received</span></div>
+    <div class="row"><div class="row-main"><p class="row-title">May 2026</p><p class="row-sub">₹18,000</p></div><span class="chip c-green">Received</span></div>
+    <div class="row"><div class="row-main"><p class="row-title">June 2026</p><p class="row-sub">₹18,500</p></div><span class="chip c-green">Received</span></div>
+    <div class="row"><div class="row-main"><p class="row-title">July 2026</p><p class="row-sub">₹18,500</p></div><span class="chip c-red">Due 5 Aug</span></div>
+  </section>
+  <p class="sec-note">Salaries are transferred on the 5th of each month. Question about a payment? Contact the office; only the administrator can change salary records.</p>
+
+  <p class="sec-note" style="text-align:center;padding-top:34px">Smart Education Computer Centre · Kanyapur, Asansol</p>
+</main>
+
+<style>
+.chap{
+  display:flex;align-items:center;gap:10px;text-align:left;
+  border:none;cursor:pointer;background:var(--fill);
+  border-radius:10px;min-height:42px;padding:8px 12px;
+  font-size:14.5px;font-weight:500;color:var(--label);
+  transition:background 140ms var(--ease-out),transform 120ms var(--ease-out);
+}
+.chap:active{transform:scale(.985)}
+@media (hover:hover) and (pointer:fine){.chap:hover{background:var(--fill-2)}}
+.chap::before{
+  content:'';flex:none;width:22px;height:22px;border-radius:50%;
+  border:1.5px solid var(--tertiary);
+  background:transparent center/12px no-repeat;
+  transition:background-color 160ms var(--ease-out),border-color 160ms var(--ease-out),transform 160ms var(--ease-out);
+}
+.chap.done{color:var(--secondary);text-decoration:line-through}
+.chap.done::before{
+  border-color:var(--green);background-color:var(--green);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  transform:scale(1.04);
+}
+.pa-seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:none}
+.pa-btn{
+  border:1.5px solid var(--separator);background:var(--card);cursor:pointer;
+  min-height:34px;padding:0 14px;border-radius:9px;
+  font-size:13px;font-weight:600;color:var(--secondary);
+  transition:background 140ms var(--ease-out),color 140ms var(--ease-out),border-color 140ms var(--ease-out),transform 120ms var(--ease-out);
+}
+.pa-btn:active{transform:scale(.95)}
+.pa-btn.on-p{background:var(--green);border-color:var(--green);color:#fff}
+.pa-btn.on-a{background:var(--red);border-color:var(--red);color:#fff}
+@media (max-width:700px){#schedForm{grid-template-columns:1fr 1fr}}
+
+/* ---- Enter test marks ---- */
+.mk-input{
+  width:72px;flex:none;text-align:center;min-height:38px;padding:8px 6px;
+  font-weight:600;font-variant-numeric:tabular-nums;
+  -moz-appearance:textfield;appearance:textfield;
+}
+.mk-input::-webkit-outer-spin-button,.mk-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.mk-max{flex:none;font-size:14px;font-weight:600;color:var(--secondary);font-variant-numeric:tabular-nums}
+.mk-chip{flex:none;display:inline-flex;justify-content:flex-end;min-width:96px}
+.mk-upload{position:relative;overflow:hidden}
+.mk-file-name{font-size:13px;color:var(--secondary);font-weight:500}
+.mk-summary{
+  display:flex;flex-wrap:wrap;gap:6px 20px;padding:14px 4px 0;
+  font-size:13.5px;color:var(--secondary);line-height:1.5;
+}
+.mk-summary b{color:var(--label);font-weight:700;font-variant-numeric:tabular-nums}
+@media (max-width:700px){#testForm{grid-template-columns:1fr 1fr}}
+@media (max-width:430px){
+  .mk-chip{min-width:0}
+  #marksCard .row-sub{display:none}
+}
+</style>
+
+<script src="../portal.js"></script>
+<script>
+(function(){
+  'use strict';
+  var banner=SE.banner,esc=SE.esc;
+
+  /* ---- Roster (drives attendance list, student list, bars) ---- */
+  var roster=[
+    {id:'SE-2026-045',name:'Riya Sen',phone:'9830011111',att:93},
+    {id:'SE-2026-051',name:'Aman Gupta',phone:'9830022222',att:88},
+    {id:'SE-2026-060',name:'Sneha Das',phone:'9830033333',att:96},
+    {id:'SE-2026-063',name:'Rahul Roy',phone:'9830044444',att:71},
+    {id:'SE-2026-070',name:'Ishita Paul',phone:'9830055555',att:84}
+  ];
+  var marks={};
+
+  function attColor(a){return a>=90?'var(--green)':(a>=75?'var(--blue)':'var(--red)');}
+  function prettyPhone(p){return p.slice(0,5)+' '+p.slice(5);}
+
+  function emptyRow(title,sub){
+    return '<div class="row"><div class="row-main" style="text-align:center;padding:16px 0">'+
+      '<p class="row-title">'+title+'</p><p class="row-sub">'+sub+'</p></div></div>';
+  }
+
+  function renderAttendance(){
+    var host=document.getElementById('attCard');
+    if(!roster.length){
+      host.innerHTML=emptyRow('No students in this batch','Add a student in My Students below and they will appear here.');
+      return;
+    }
+    host.innerHTML=roster.map(function(s){
+      var m=marks[s.id]||'';
+      return '<div class="row"><div class="row-main">'+
+        '<p class="row-title">'+esc(s.name)+'</p><p class="row-sub">'+esc(s.id)+'</p></div>'+
+        '<div class="pa-seg" role="group" aria-label="Attendance for '+esc(s.name)+'">'+
+        '<button type="button" class="pa-btn'+(m==='P'?' on-p':'')+'" data-id="'+esc(s.id)+'" data-m="P">Present</button>'+
+        '<button type="button" class="pa-btn'+(m==='A'?' on-a':'')+'" data-id="'+esc(s.id)+'" data-m="A">Absent</button>'+
+        '</div></div>';
+    }).join('');
+    host.querySelectorAll('.pa-btn').forEach(function(b){
+      b.addEventListener('click',function(){
+        marks[b.dataset.id]=b.dataset.m;
+        document.getElementById('attBanner').innerHTML='';
+        renderAttendance();
+      });
+    });
+  }
+
+  function renderStudents(){
+    var host=document.getElementById('studentCard');
+    if(!roster.length){
+      host.innerHTML=emptyRow('No students in this batch yet','Type a Student ID below to add your first student.');
+      return;
+    }
+    host.innerHTML=roster.map(function(s){
+      return '<div class="row"><div class="row-main">'+
+        '<p class="row-title">'+esc(s.name)+'</p>'+
+        '<p class="row-sub">'+esc(s.id)+' · Parent: '+prettyPhone(s.phone)+'</p></div>'+
+        '<a class="btn b-green-tinted b-xs" href="tel:+91'+s.phone+'">Call parent</a>'+
+        '<button type="button" class="btn b-red-tinted b-xs rm-btn" data-id="'+esc(s.id)+'">Remove</button>'+
+        '</div>';
+    }).join('');
+    host.querySelectorAll('.rm-btn').forEach(function(b){
+      b.addEventListener('click',function(){
+        roster=roster.filter(function(s){return s.id!==b.dataset.id;});
+        renderAll();
+      });
+    });
+  }
+
+  function renderBars(){
+    var host=document.getElementById('barsWrap');
+    if(!roster.length){
+      host.innerHTML='<p class="hint">Attendance bars will appear here once students are added to the batch.</p>';
+      return;
+    }
+    var head='<div style="display:grid;grid-template-columns:110px 1fr 48px;gap:10px;align-items:center">'+
+      '<span></span><div style="position:relative;height:14px;font-size:10.5px;color:var(--secondary)">'+
+      '<span style="position:absolute;left:0">0%</span>'+
+      '<span style="position:absolute;left:50%;transform:translateX(-50%)">50%</span>'+
+      '<span style="position:absolute;left:75%;transform:translateX(-50%);font-weight:700;color:var(--red)">75%</span>'+
+      '<span style="position:absolute;right:0">100%</span></div><span></span></div>';
+    host.innerHTML=head+roster.map(function(s){
+      return '<div style="display:grid;grid-template-columns:110px 1fr 48px;gap:10px;align-items:center">'+
+        '<span style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.name)+'</span>'+
+        '<div class="abar-track"><span class="grid-l" style="left:25%"></span><span class="grid-l" style="left:50%"></span>'+
+        '<span class="abar" style="width:'+s.att+'%;background:'+attColor(s.att)+'"></span>'+
+        '<span class="min-l" style="left:75%"></span></div>'+
+        '<span style="font-size:13px;font-weight:700;text-align:right;color:'+attColor(s.att)+';font-variant-numeric:tabular-nums">'+s.att+'%</span>'+
+        '</div>';
+    }).join('');
+  }
+
+  /* ---- Enter test marks (front-end demo) ---- */
+  var MK_MAX=100, testMarks={};
+  function gradeChip(v){
+    if(v==null||isNaN(v))return '';
+    var p=Math.round(v/MK_MAX*100),cls='c-red',word='Needs help';
+    if(p>=75){cls='c-green';word='Strong';}
+    else if(p>=33){cls='c-blue';word='Pass';}
+    return '<span class="chip '+cls+'">'+p+'% · '+word+'</span>';
+  }
+  function renderMarks(){
+    var host=document.getElementById('marksCard');
+    if(!host)return;
+    if(!roster.length){
+      host.innerHTML=emptyRow('No students in this batch','Add a student in My Students below to enter their marks.');
+      return;
+    }
+    host.innerHTML=roster.map(function(s){
+      var v=testMarks[s.id];
+      return '<div class="row"><div class="row-main">'+
+        '<p class="row-title">'+esc(s.name)+'</p><p class="row-sub">'+esc(s.id)+'</p></div>'+
+        '<input class="field mk-input" type="number" inputmode="numeric" min="0" max="'+MK_MAX+
+          '" placeholder="—" value="'+(v==null?'':v)+'" data-id="'+esc(s.id)+
+          '" aria-label="Marks for '+esc(s.name)+', out of '+MK_MAX+'">'+
+        '<span class="mk-max">/ '+MK_MAX+'</span>'+
+        '<span class="mk-chip">'+gradeChip(v)+'</span>'+
+        '</div>';
+    }).join('');
+    host.querySelectorAll('.mk-input').forEach(function(inp){
+      inp.addEventListener('input',function(){
+        var raw=inp.value.trim(),n=null;
+        if(raw!==''){n=parseFloat(raw);if(isNaN(n))n=null;else n=Math.max(0,Math.min(MK_MAX,n));}
+        testMarks[inp.dataset.id]=n;
+        var slot=inp.parentNode.querySelector('.mk-chip');
+        if(slot)slot.innerHTML=gradeChip(n);
+        updateMkSummary();
+      });
+    });
+  }
+  function updateMkSummary(){
+    var el=document.getElementById('mkSummary');
+    if(!el)return;
+    var entered=roster.filter(function(s){return testMarks[s.id]!=null;});
+    if(!entered.length){el.innerHTML='<span>No marks entered yet — type a score next to each student.</span>';return;}
+    var sum=entered.reduce(function(a,s){return a+testMarks[s.id];},0);
+    var avg=Math.round(sum/entered.length/MK_MAX*100);
+    var top=entered.reduce(function(a,s){return testMarks[s.id]>testMarks[a.id]?s:a;});
+    el.innerHTML='<span>Entered <b>'+entered.length+'</b> of <b>'+roster.length+'</b></span>'+
+      '<span>Class average <b>'+avg+'%</b></span>'+
+      '<span>Highest <b>'+esc(top.name)+'</b> (<b>'+testMarks[top.id]+'</b>/'+MK_MAX+')</span>';
+  }
+
+  function renderAll(){renderAttendance();renderStudents();renderBars();renderMarks();updateMkSummary();}
+  renderAll();
+
+  document.getElementById('mkMax').addEventListener('input',function(){
+    var m=parseInt(this.value,10);
+    MK_MAX=(m&&m>0)?m:100;
+    roster.forEach(function(s){if(testMarks[s.id]!=null)testMarks[s.id]=Math.min(testMarks[s.id],MK_MAX);});
+    renderMarks();updateMkSummary();
+  });
+  document.getElementById('saveMarksBtn').addEventListener('click',function(){
+    var name=(document.getElementById('mkName').value||'').trim();
+    var entered=roster.filter(function(s){return testMarks[s.id]!=null;}).length;
+    if(!entered){banner('mkBanner','red',"Type at least one student’s marks before saving.");return;}
+    banner('mkBanner','green','Marks saved'+(name?' for '+name:'')+'. Students and parents can now see this result.');
+  });
+  document.getElementById('mkFile').addEventListener('change',function(){
+    var f=this.files&&this.files[0],nm=document.getElementById('mkFileName');
+    if(f){nm.textContent='Attached: '+f.name;banner('mkBanner','blue','Marksheet ready. Press Save marks to submit it to the office.');}
+    else{nm.textContent='';}
+  });
+
+  document.getElementById('saveAttBtn').addEventListener('click',function(){
+    banner('attBanner','green','Attendance saved. Parents of absent students will get an SMS automatically.');
+  });
+
+  document.getElementById('addStudentBtn').addEventListener('click',function(){
+    var inp=document.getElementById('newStudentId'),v=(inp.value||'').trim();
+    if(!v)return;
+    roster.push({id:v.toUpperCase(),name:'New student ('+v.toUpperCase()+')',phone:'0000000000',att:100});
+    inp.value='';
+    renderAll();
+    banner('addBanner','green','Student added to your batch.');
+  });
+
+  /* ---- Homework & announcement ---- */
+  document.getElementById('assignBtn').addEventListener('click',function(){
+    banner('hwBanner','green',"Homework assigned. It now appears on every student’s dashboard.");
+  });
+  document.getElementById('annBtn').addEventListener('click',function(){
+    banner('annBanner','green','Announcement sent to your students and their parents.');
+  });
+
+  /* ---- Chapters ---- */
+  document.querySelectorAll('.course').forEach(function(card){
+    var bar=card.querySelector('.pbar i'),lbl=card.querySelector('.prog-lbl'),
+        chaps=Array.prototype.slice.call(card.querySelectorAll('.chap'));
+    function refresh(){
+      var done=chaps.filter(function(c){return c.classList.contains('done');}).length;
+      bar.style.setProperty('--p',(done/chaps.length).toFixed(3));
+      lbl.textContent=done+' of '+chaps.length+' chapters taught';
+    }
+    chaps.forEach(function(c){
+      c.addEventListener('click',function(){c.classList.toggle('done');refresh();});
+    });
+    refresh();
+  });
+
+  /* ---- Schedule ---- */
+  var schedule=[
+    {course:'Python (Beginner batch)',type:'Test',date:'20 July 2026'},
+    {course:'C Programming (Evening batch)',type:'Revision',date:'17 July 2026'}
+  ];
+  function renderSchedule(){
+    document.getElementById('schedList').innerHTML=schedule.map(function(s){
+      return '<div class="row"><div class="row-main">'+
+        '<p class="row-title" style="font-size:15px">'+esc(s.course)+'</p>'+
+        '<p class="row-sub">'+esc(s.date)+'</p></div>'+
+        '<span class="chip '+(s.type==='Test'?'c-red':'c-blue')+'">'+s.type+'</span></div>';
+    }).join('');
+  }
+  renderSchedule();
+  document.getElementById('schAdd').addEventListener('click',function(){
+    var c=document.getElementById('schCourse').value,
+        t=document.getElementById('schType').value,
+        d=document.getElementById('schDate').value,
+        pretty=d?new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'Date to be announced';
+    schedule.unshift({course:c,type:t,date:pretty});
+    renderSchedule();
+  });
+
+  /* ---- Personalized greeting ---- */
+  var uid=null,role=null;
+  try{uid=localStorage.getItem('se-user-id');role=localStorage.getItem('se-role');}catch(e){}
+  if(role==='teacher'&&uid&&uid!=='TCH-008'){
+    document.getElementById('lgTitle').textContent='Hello, '+uid;
+    document.getElementById('lgSub').textContent='Thursday, 9 July 2026';
+    document.getElementById('navTitle').textContent=uid;
+  }
+})();
+</script>
+</body>
+</html>

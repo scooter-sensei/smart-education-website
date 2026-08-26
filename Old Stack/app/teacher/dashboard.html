@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.TEACHER);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+
+<main class="app-main">
+  <div class="page-head">
+    <h1 id="greet">Dashboard</h1>
+    <p id="greetSub">Loading your teaching summary…</p>
+  </div>
+
+  <div class="kpi-strip" id="kpis" aria-label="Your summary" aria-busy="true">
+    <div class="skel" style="grid-column:1/-1"><div class="skel-row"></div></div>
+  </div>
+
+  <section class="panel" aria-labelledby="todH">
+    <div class="panel-head"><h2 id="todH">Your subjects</h2><span class="count" id="todCount"></span></div>
+    <div id="todBody"></div>
+  </section>
+
+  <p class="sec-lead">You only ever see your own students and figures. Use the sidebar for attendance, your students, enrollments, registering a student, and your commission.</p>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('teacher/dashboard.html');
+  var esc=SE.esc, $=function(id){return document.getElementById(id);};
+
+  var u=SE.auth.user()||{name:'there'};
+  var h=new Date().getHours(), part=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+  $('greet').textContent=part+', '+esc(u.name.split(' ')[0]);
+
+  function cell(label,value,foot){
+    return '<div class="kpi"><p class="kl">'+esc(label)+'</p><p class="kv">'+value+'</p>'+(foot?'<p class="kf">'+foot+'</p>':'')+'</div>';
+  }
+  function skeleton(n){ var s=''; for(var i=0;i<n;i++) s+='<div class="skel-row"></div>'; return '<div class="skel">'+s+'</div>'; }
+
+  var KBODY=$('kpis'), TBODY=$('todBody'), TCOUNT=$('todCount');
+  TBODY.innerHTML=skeleton(2);
+
+  SE.api.dashboard.teacherToday().then(function(t){
+    KBODY.setAttribute('aria-busy','false');
+    KBODY.innerHTML=[
+      cell('Assigned subjects', t.subjects.length, esc(t.subjects.join(' · '))),
+      cell('My students', t.students, 'active enrollments'),
+      cell('Commission · '+esc(t.cycle), SE.money(t.commission), 'calculated at 50%'),
+      cell('Attendance today', t.marked?'Marked':'Not marked', t.marked?'done':'tap a class below')
+    ].join('');
+    $('greetSub').textContent=esc(t.subjects.join(' · '))+' · '+esc(t.cycle);
+
+    if(!t.sessions.length){
+      TBODY.innerHTML='<div class="empty"><span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><b>No subjects yet</b><p>When you’re authorised for a subject and students are enrolled with you, they appear here.</p></div>';
+      TCOUNT.textContent='0'; return;
+    }
+    TBODY.innerHTML=t.sessions.map(function(s){
+      return '<div class="row"><div class="row-main">'+
+        '<p class="row-title">'+esc(s.subject)+'</p><p class="row-sub">'+s.count+' student'+(s.count===1?'':'s')+' enrolled</p></div>'+
+        '<div class="row-acts"><a class="btn b-tinted b-xs" href="attendance.html">Take attendance</a></div></div>';
+    }).join('');
+    TCOUNT.textContent=t.sessions.length;
+  }).catch(function(){
+    KBODY.setAttribute('aria-busy','false');
+    KBODY.innerHTML='<div class="err" style="grid-column:1/-1"><span class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span><div><b>Couldn’t load your summary</b><p>Check your connection and reload.</p></div></div>';
+    TBODY.innerHTML=''; $('greetSub').textContent='Teacher console';
+  });
+
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('[data-soon]');
+    if(b && !b.closest('#side')) SE.shell.toast(b.getAttribute('data-soon')+' arrives in a later build phase.');
+  });
+})();
+</script>
+</body>
+</html>

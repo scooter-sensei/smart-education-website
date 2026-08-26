@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attendance · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.TEACHER);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Attendance</h1>
+    <p>Mark who attended, by date and subject. You can record or amend any date in the current month — earlier months are locked, so the register stays settled once a month closes.</p>
+  </div>
+
+  <section class="card-pad create-card">
+    <div class="f-grid f-2">
+      <label class="fld2"><span class="f-label">Date</span><input class="field" type="date" id="attDate"></label>
+      <div class="fld2"><span class="f-label">Subject</span><div class="seg att-subject" id="segSubject" role="tablist" aria-label="Subject"><button type="button" class="on" data-ts="" role="tab" aria-selected="true">All</button></div></div>
+    </div>
+    <p class="att-lock" id="lockNote" hidden>This date is outside the current month, so the register is locked. Only the current month can be edited.</p>
+  </section>
+
+  <section class="panel" id="attPanel">
+    <div class="panel-head"><h2 id="rosterHead">Roster</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+    <div class="att-foot" id="attFoot">
+      <span class="att-tally" id="attTally"><b>0</b> present · <b>0</b> absent</span>
+      <div class="att-actions">
+        <button class="btn b-gray b-sm" type="button" id="allPresent">All present</button>
+        <button class="btn b-filled b-sm" type="button" id="saveBtn">Save attendance</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('teacher/attendance.html');
+  var esc=SE.esc, fmtDate=SE.fmtDate;
+  function pad2(n){ n=String(n); return n.length<2?'0'+n:n; }
+  function initials(n){ return String(n||'?').trim().split(/\s+/).map(function(w){return w.charAt(0);}).slice(0,2).join('').toUpperCase(); }
+
+  var now=new Date();
+  var todayStr=now.getFullYear()+'-'+pad2(now.getMonth()+1)+'-'+pad2(now.getDate());
+  var monthStart=now.getFullYear()+'-'+pad2(now.getMonth()+1)+'-01';
+  var thisMonth=todayStr.slice(0,7);
+
+  var dateInput=document.getElementById('attDate');
+  dateInput.value=todayStr; dateInput.min=monthStart; dateInput.max=todayStr;
+
+  var state={date:todayStr, ts_id:''};
+  var panelEl=document.getElementById('attPanel');
+  var saveBtn=document.getElementById('saveBtn'), allBtn=document.getElementById('allPresent');
+
+  /* subject options (this teacher's subjects) */
+  SE.api.teacher.subjects().then(function(list){
+    var seg=document.getElementById('segSubject');
+    seg.innerHTML='<button type="button" class="on" data-ts="" role="tab" aria-selected="true">All</button>'+
+      list.map(function(s){ return '<button type="button" data-ts="'+esc(s.ts_id)+'" role="tab" aria-selected="false">'+esc(s.subject)+'</button>'; }).join('');
+    seg.addEventListener('click',function(ev){
+      var b=ev.target.closest('button[data-ts]'); if(!b) return;
+      [].forEach.call(seg.children,function(x){ var on=x===b; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); });
+      state.ts_id=b.getAttribute('data-ts'); panel.reload();
+    });
+  });
+
+  function attSeg(status){
+    var s=status||'PRESENT';
+    return '<div class="seg att-seg">'+
+      '<button type="button" class="'+(s==='PRESENT'?'on':'')+'" data-act="mark" data-status="PRESENT">Present</button>'+
+      '<button type="button" class="'+(s==='ABSENT'?'on':'')+'" data-act="mark" data-status="ABSENT">Absent</button>'+
+    '</div>';
+  }
+
+  var panel=SE.ui.listPanel({
+    mount:'listBody',
+    fetch:function(){ return SE.api.teacher.attendanceRoster({date:state.date, ts_id:state.ts_id}); },
+    empty:{title:'No students to mark', sub:'You have no active enrollments for this subject. Enrolled students show up here to mark present or absent.', icon:'box'},
+    row:function(r){
+      return '<div class="row inset-ava" data-id="'+r.enrollment_id+'">'+
+        '<span class="acct-ava" aria-hidden="true">'+esc(initials(r.student))+'</span>'+
+        '<div class="row-main"><p class="row-title">'+esc(r.student)+'</p>'+
+        '<p class="row-sub"><span class="lcode">'+esc(r.student_code)+'</span> · '+esc(r.subject)+'</p></div>'+
+        '<div class="row-acts">'+attSeg(r.status)+'</div></div>';
+    },
+    after:function(){ applyLock(); computeTally(); },
+    onAction:function(id,act,rowEl,btn){
+      if(act!=='mark' || panelEl.classList.contains('is-locked')) return;
+      var seg=btn.closest('.att-seg');
+      [].forEach.call(seg.children,function(b){ b.classList.toggle('on',b===btn); });
+      computeTally();
+    }
+  });
+
+  function rows(){ return document.querySelectorAll('#listBody .row'); }
+  function computeTally(){
+    var present=0, absent=0;
+    [].forEach.call(rows(),function(rw){ var on=rw.querySelector('.att-seg button.on'); if(on){ on.getAttribute('data-status')==='PRESENT'?present++:absent++; } });
+    document.getElementById('attTally').innerHTML='<b>'+present+'</b> present · <b>'+absent+'</b> absent';
+    var n=rows().length;
+    document.getElementById('listCount').textContent=n||'';
+    document.getElementById('attFoot').style.display=n?'':'none';
+  }
+  function applyLock(){
+    var locked = state.date && state.date.slice(0,7)!==thisMonth;
+    panelEl.classList.toggle('is-locked',!!locked);
+    document.getElementById('lockNote').hidden=!locked;
+    saveBtn.disabled=!!locked; allBtn.disabled=!!locked;
+    document.getElementById('rosterHead').textContent='Roster · '+fmtDate(state.date);
+  }
+
+  dateInput.addEventListener('change',function(){
+    state.date=dateInput.value||todayStr;
+    applyLock(); panel.reload();
+  });
+
+  allBtn.addEventListener('click',function(){
+    if(panelEl.classList.contains('is-locked')) return;
+    [].forEach.call(rows(),function(rw){ [].forEach.call(rw.querySelectorAll('.att-seg button'),function(b){ b.classList.toggle('on',b.getAttribute('data-status')==='PRESENT'); }); });
+    computeTally();
+  });
+
+  saveBtn.addEventListener('click',function(){
+    var marks=[];
+    [].forEach.call(rows(),function(rw){ var on=rw.querySelector('.att-seg button.on'); if(on) marks.push({enrollment_id:rw.getAttribute('data-id'), status:on.getAttribute('data-status')}); });
+    if(!marks.length){ SE.shell.toast('No students to mark for this date.'); return; }
+    saveBtn.disabled=true;
+    SE.api.teacher.attendanceSave({date:state.date, marks:marks})
+      .then(function(res){ saveBtn.disabled=false; SE.shell.toast('Saved '+fmtDate(res.date)+' — '+res.present+' present, '+res.absent+' absent.'); })
+      .catch(function(err){ saveBtn.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t save — try again.'); });
+  });
+
+  applyLock();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher Payouts · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.SUPER_ADMIN);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Teacher Payouts</h1>
+    <p>Pay teachers the commission they’ve accrued. A payout can’t exceed a teacher’s unpaid balance — what they’ve earned from collected fees, less what’s already been paid.</p>
+  </div>
+
+  <div class="kpi-strip kpi-3" id="kpis" aria-label="Payout summary" aria-busy="true">
+    <div class="skel" style="grid-column:1/-1"><div class="skel-row"></div></div>
+  </div>
+
+  <section class="card-pad create-card">
+    <h2 class="card-h">Record a payout</h2>
+    <p class="card-hint">Pick a teacher with a balance owing; the amount prefills to their full balance. You can pay less to make a part payment.</p>
+    <form id="payForm" novalidate>
+      <div class="f-grid f-3">
+        <label class="fld2"><span class="f-label">Teacher</span><select class="field" name="teacher_code" id="poTeacher"></select><span class="fe" data-err="teacher_code"></span></label>
+        <label class="fld2"><span class="f-label">Amount (₹)</span><input class="field" name="amount" id="poAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="e.g. 475"><span class="fe" data-err="amount"></span></label>
+        <label class="fld2"><span class="f-label">Method</span><select class="field" name="method" id="poMethod">
+          <option value="BANK_TRANSFER">Bank transfer</option><option value="CASH">Cash</option><option value="UPI">UPI</option><option value="CHEQUE">Cheque</option>
+        </select><span class="fe" data-err="method"></span></label>
+        <label class="fld2"><span class="f-label">Reference <span style="font-weight:400;color:var(--tertiary)">· optional</span></span><input class="field" name="reference" type="text" placeholder="NEFT / UPI / cheque no." autocomplete="off"><span class="fe" data-err="reference"></span></label>
+        <label class="fld2"><span class="f-label">Paid on</span><input class="field" name="paid_on" id="poDate" type="date"><span class="fe" data-err="paid_on"></span></label>
+      </div>
+      <div class="form-actions"><button class="btn b-filled" type="submit" id="poBtn">Record payout</button></div>
+    </form>
+  </section>
+
+  <div class="list-tools" role="group" aria-label="Search payouts">
+    <div class="search-wrap" style="flex:1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input class="field search" id="searchInput" type="search" placeholder="Search teacher, code or reference" autocomplete="off" aria-label="Search payouts">
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Recent payouts</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('admin/payouts.html');
+  var esc=SE.esc, money=SE.money;
+  var METHOD={CASH:'Cash',UPI:'UPI',BANK_TRANSFER:'Bank transfer',CHEQUE:'Cheque'};
+  var state={q:''};
+  var form=document.getElementById('payForm'), amountEl=document.getElementById('poAmount');
+  var payableById={};
+  form.elements.paid_on.value=new Date().toISOString().slice(0,10);
+
+  function initials(n){ return String(n||'?').trim().split(/\s+/).map(function(w){return w.charAt(0);}).slice(0,2).join('').toUpperCase(); }
+
+  var KB=document.getElementById('kpis');
+  function cell(label,value,foot){ return '<div class="kpi"><p class="kl">'+esc(label)+'</p><p class="kv">'+value+'</p>'+(foot?'<p class="kf">'+esc(foot)+'</p>':'')+'</div>'; }
+  function loadKpis(){
+    SE.api.payouts.summary().then(function(k){
+      KB.setAttribute('aria-busy','false');
+      KB.innerHTML=[ cell('Commission accrued', money(k.accrued)), cell('Paid out', money(k.paid)), cell('Payable now', money(k.payable), k.owing+(k.owing===1?' teacher':' teachers')) ].join('');
+    }).catch(function(){ KB.setAttribute('aria-busy','false'); KB.innerHTML=cell('Payable now','—'); });
+  }
+
+  function loadTeachers(){
+    return SE.api.payouts.payable().then(function(list){
+      payableById={}; list.forEach(function(t){ payableById[t.teacher_code]=t; });
+      var sel=document.getElementById('poTeacher');
+      sel.innerHTML='<option value="" disabled selected>'+(list.length?'Select a teacher':'Nothing to pay out')+'</option>'+
+        list.map(function(t){ return '<option value="'+esc(t.teacher_code)+'">'+esc(t.teacher)+' · '+esc(t.teacher_code)+' · owes '+money(t.payable)+'</option>'; }).join('');
+    });
+  }
+
+  document.getElementById('poTeacher').addEventListener('change',function(){
+    var t=payableById[this.value]; if(t) amountEl.value=t.payable;
+  });
+
+  function methodChip(m){ return '<span class="chip c-gray">'+esc(METHOD[m]||m)+'</span>'; }
+  var panel=SE.ui.listPanel({
+    mount:'listBody', count:'listCount',
+    fetch:function(){ return SE.api.payouts.list(state.q?{q:state.q}:{}); },
+    empty:{title:'No payouts yet', sub:'Recorded payouts appear here. Use the form above to pay a teacher’s balance.', icon:'box'},
+    row:function(p){
+      return '<div class="row inset-ava" data-id="'+p.id+'"><span class="acct-ava" aria-hidden="true">'+esc(initials(p.teacher))+'</span>'+
+        '<div class="row-main"><p class="row-title">'+esc(p.teacher)+' · <b style="font-weight:650;color:var(--green)">'+money(p.amount)+'</b></p>'+
+        '<p class="row-sub"><span class="lcode">'+esc(p.teacher_code)+'</span> · '+SE.fmtDate(p.paid_on)+(p.reference?' · ref '+esc(p.reference):'')+'</p></div>'+
+        '<div class="row-acts">'+methodChip(p.method)+'</div></div>';
+    }
+  });
+
+  var searchInput=document.getElementById('searchInput'), st;
+  searchInput.addEventListener('input',function(){ clearTimeout(st); st=setTimeout(function(){ state.q=searchInput.value; panel.reload(); },200); });
+
+  form.addEventListener('submit',function(ev){
+    ev.preventDefault();
+    SE.ui.clearErrors(form);
+    var ok=SE.ui.validate(form,{
+      teacher_code:function(v){ return v?null:'Choose a teacher.'; },
+      amount:function(v){ if(!v)return 'Enter the amount.'; return (+v>0)?null:'Enter an amount greater than zero.'; }
+    });
+    if(!ok) return;
+    var btn=document.getElementById('poBtn'); btn.disabled=true;
+    SE.api.payouts.record({ teacher_code:form.elements.teacher_code.value, amount:+amountEl.value, method:form.elements.method.value, reference:form.elements.reference.value.trim(), paid_on:form.elements.paid_on.value })
+      .then(function(row){ form.reset(); form.elements.paid_on.value=new Date().toISOString().slice(0,10); form.elements.method.value='BANK_TRANSFER'; btn.disabled=false;
+        loadKpis(); loadTeachers(); panel.reload(); SE.shell.toast('Paid '+money(row.amount)+' to '+row.teacher+'.'); })
+      .catch(function(err){ btn.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t record the payout.'); });
+  });
+
+  loadKpis(); loadTeachers();
+})();
+</script>
+</body>
+</html>

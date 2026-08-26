@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Enrollments · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.TEACHER);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>My Enrollments</h1>
+    <p>Your students, by subject. Request a new enrollment or ask to end one — the admin approves it, and billing starts or stops from there.</p>
+  </div>
+
+  <section class="card-pad create-card">
+    <h2 class="card-h">Request an enrollment</h2>
+    <p class="card-hint">Pick an active student and one of your subjects. It’s submitted for admin approval and appears below as “Pending”.</p>
+    <form id="reqForm" novalidate>
+      <div class="f-grid f-2">
+        <label class="fld2"><span class="f-label">Student</span><select class="field" name="student_id" id="reqStudent"></select><span class="fe" data-err="student_id"></span></label>
+        <label class="fld2"><span class="f-label">Subject</span><select class="field" name="ts_id" id="reqSubject"></select><span class="fe" data-err="ts_id"></span></label>
+      </div>
+      <div class="form-actions"><button class="btn b-filled" type="submit" id="reqBtn">Request enrollment</button></div>
+    </form>
+  </section>
+
+  <div class="list-tools" role="group" aria-label="Filter enrollments">
+    <div class="seg" id="segStatus" role="tablist" aria-label="Status">
+      <button type="button" class="on" data-status="" role="tab" aria-selected="true">All</button>
+      <button type="button" data-status="PENDING" role="tab" aria-selected="false">Pending</button>
+      <button type="button" data-status="ACTIVE" role="tab" aria-selected="false">Active</button>
+      <button type="button" data-status="PENDING_DEACTIVATION" role="tab" aria-selected="false">Ending</button>
+      <button type="button" data-status="INACTIVE" role="tab" aria-selected="false">Inactive</button>
+    </div>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input class="field search" id="searchInput" type="search" placeholder="Search student or subject" autocomplete="off" aria-label="Search my enrollments">
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Enrollments</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('teacher/enrollments.html');
+  var esc=SE.esc, fmtDate=SE.fmtDate;
+  var state={status:'', q:''};
+  var byId={};
+
+  function initials(n){ return String(n||'?').trim().split(/\s+/).map(function(w){return w.charAt(0);}).slice(0,2).join('').toUpperCase(); }
+
+  /* request-form options: active students + my subjects */
+  SE.api.enrollments.options().then(function(o){
+    document.getElementById('reqStudent').innerHTML='<option value="" disabled selected>Select a student</option>'+
+      o.students.map(function(s){ return '<option value="'+esc(s.id)+'">'+esc(s.label)+'</option>'; }).join('');
+  });
+  SE.api.teacher.subjects().then(function(list){
+    document.getElementById('reqSubject').innerHTML='<option value="" disabled selected>Select a subject</option>'+
+      list.map(function(s){ return '<option value="'+esc(s.ts_id)+'">'+esc(s.subject)+'</option>'; }).join('');
+  });
+
+  function contextLine(e){
+    switch(e.status){
+      case 'PENDING':               return 'Awaiting admin approval · requested '+fmtDate(e.created_at);
+      case 'ACTIVE':                return 'Active since '+fmtDate(e.created_at);
+      case 'PENDING_DEACTIVATION':  return 'Ends after the current billing cycle';
+      case 'INACTIVE':              return 'Ended '+fmtDate(e.reviewed_at||e.created_at);
+      case 'REJECTED':              return 'Not approved · '+fmtDate(e.reviewed_at||e.created_at);
+      default:                      return fmtDate(e.created_at);
+    }
+  }
+  function actionsFor(e){
+    if(e.status==='PENDING') return '<button class="btn b-gray b-xs" type="button" data-act="cancel">Cancel request</button>';
+    if(e.status==='ACTIVE')  return '<button class="btn b-red-tinted b-xs" type="button" data-act="requestEnd">Request end</button>';
+    return '';
+  }
+  function rowHtml(e){
+    return '<div class="row inset-ava" data-id="'+e.id+'">'+
+      '<span class="acct-ava" aria-hidden="true">'+esc(initials(e.student))+'</span>'+
+      '<div class="row-main">'+
+        '<p class="row-title">'+esc(e.student)+'</p>'+
+        '<p class="row-sub"><span class="lcode">'+esc(e.student_code)+'</span> · '+esc(e.subject)+'</p>'+
+        '<p class="row-sub">'+esc(e.session)+' · '+contextLine(e)+'</p>'+
+      '</div>'+
+      '<div class="row-acts">'+SE.statusPill('enrollment',e.status).outerHTML+actionsFor(e)+'</div></div>';
+  }
+
+  var panel=SE.ui.listPanel({
+    mount:'listBody', count:'listCount',
+    fetch:function(){
+      return SE.api.teacher.enrollments(state.status?{status:state.status}:{}).then(function(list){
+        var q=state.q.trim().toLowerCase();
+        if(q) list=list.filter(function(e){ return [e.student,e.student_code,e.subject].some(function(f){return (f||'').toLowerCase().indexOf(q)>=0;}); });
+        byId={}; list.forEach(function(e){ byId[e.id]=e; });
+        return list;
+      });
+    },
+    empty:{title:'No enrollments match', sub:'Adjust the filter or search above, or request an enrollment for one of your subjects.', icon:'box'},
+    row:rowHtml,
+    onAction:function(id,act,rowEl){
+      var e=byId[id]; if(!e) return;
+      if(act==='cancel') confirmDo(e,rowEl,'cancelRequest',{title:'Cancel this request?',body:'Your enrollment request for '+esc(e.student)+' · '+esc(e.subject)+' is withdrawn. You can request it again later.',confirmLabel:'Cancel request',tone:'danger'}, 'Request for '+e.student+' withdrawn.');
+      else if(act==='requestEnd') confirmDo(e,rowEl,'requestDeactivation',{title:'Request to end this enrollment?',body:esc(e.student)+'’s '+esc(e.subject)+' enrollment keeps billing through the current cycle, then the admin ends it.',confirmLabel:'Request end',tone:'danger'}, 'End requested for '+e.student+' · '+e.subject+'.');
+    }
+  });
+
+  function afterChange(e,rowEl){ if(state.status) panel.reload(); else rowEl.outerHTML=rowHtml(e); }
+  function confirmDo(e,rowEl,method,dialog,okMsg){
+    SE.ui.confirm(dialog).then(function(ok){
+      if(!ok) return;
+      SE.api.teacher[method](e.id).then(function(res){ if(res&&res.status) e.status=res.status; afterChange(e,rowEl); SE.shell.toast(okMsg); })
+        .catch(function(err){ SE.shell.toast((err&&err.message)||'That didn’t go through — try again.'); });
+    });
+  }
+
+  /* filter + search */
+  var seg=document.getElementById('segStatus');
+  seg.addEventListener('click',function(ev){
+    var b=ev.target.closest('button[data-status]'); if(!b) return;
+    [].forEach.call(seg.children,function(x){ var on=x===b; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); });
+    state.status=b.getAttribute('data-status'); panel.reload();
+  });
+  var searchInput=document.getElementById('searchInput'), st;
+  searchInput.addEventListener('input',function(){ clearTimeout(st); st=setTimeout(function(){ state.q=searchInput.value; panel.reload(); },200); });
+
+  /* request an enrollment */
+  var form=document.getElementById('reqForm');
+  function selectStatus(v){ [].forEach.call(seg.children,function(x){ var on=x.getAttribute('data-status')===v; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); }); state.status=v; panel.reload(); }
+  form.addEventListener('submit',function(ev){
+    ev.preventDefault();
+    SE.ui.clearErrors(form);
+    var ok=SE.ui.validate(form,{
+      student_id:function(v){ return v?null:'Choose a student.'; },
+      ts_id:function(v){ return v?null:'Choose a subject.'; }
+    });
+    if(!ok) return;
+    var btn=document.getElementById('reqBtn'); btn.disabled=true;
+    SE.api.teacher.requestEnrollment({student_id:form.elements.student_id.value,ts_id:form.elements.ts_id.value})
+      .then(function(row){ form.reset(); document.getElementById('reqStudent').selectedIndex=0; document.getElementById('reqSubject').selectedIndex=0; btn.disabled=false;
+        if(state.status&&state.status!=='PENDING') selectStatus(''); else panel.reload();
+        SE.shell.toast('Requested — '+row.student+' · '+row.subject+' is awaiting approval.'); })
+      .catch(function(err){ btn.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t submit the request.'); });
+  });
+})();
+</script>
+</body>
+</html>

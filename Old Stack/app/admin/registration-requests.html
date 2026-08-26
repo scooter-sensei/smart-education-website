@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registration Requests · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.SUPER_ADMIN);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Registration Requests</h1>
+    <p>Teachers submit new-student intakes here. Approving one creates a permanent, never-reused Student ID and the student’s first admission — both are preserved as history. Rejecting creates nothing.</p>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Pending approval</h2><span class="count" id="pendCount"></span></div>
+    <div id="pendBody"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Recently reviewed</h2><span class="count" id="revCount"></span></div>
+    <div id="revBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('admin/registration-requests.html');
+  var esc=SE.esc;
+
+  function pendRow(r){
+    return '<div class="row" data-id="'+r.id+'"><div class="row-main">'+
+      '<p class="row-title">'+esc(r.full_name)+'</p>'+
+      '<p class="row-sub">'+esc(r.klass)+' · '+esc(r.session)+' · guardian '+esc(r.guardian_name)+' ('+esc(r.guardian_phone)+')</p>'+
+      '<p class="row-sub">Requested by '+esc(r.requested_by)+' · '+SE.fmtDate(r.created_at)+'</p></div>'+
+      '<div class="row-acts">'+
+        '<button class="btn b-green-tinted b-xs" type="button" data-act="approve">Approve</button>'+
+        '<button class="btn b-red-tinted b-xs" type="button" data-act="reject">Reject</button>'+
+      '</div></div>';
+  }
+  function revRow(r){
+    return '<div class="row" data-id="'+r.id+'"><div class="row-main">'+
+      '<p class="row-title">'+esc(r.full_name)+'</p>'+
+      '<p class="row-sub">'+esc(r.klass)+' · '+esc(r.session)+' · reviewed '+SE.fmtDate(r.reviewed_at)+'</p></div>'+
+      '<div class="row-acts">'+SE.statusPill('request',r.status).outerHTML+'</div></div>';
+  }
+
+  var revPanel=SE.ui.listPanel({
+    mount:'revBody', count:'revCount',
+    fetch:function(){ return SE.api.registrationRequests.list().then(function(a){ return a.filter(function(r){return r.status!=='PENDING';}); }); },
+    empty:{title:'Nothing reviewed yet', sub:'Approved and rejected requests will be listed here for the record.', icon:'box'},
+    row:revRow
+  });
+
+  var pendPanel=SE.ui.listPanel({
+    mount:'pendBody', count:'pendCount',
+    fetch:function(){ return SE.api.registrationRequests.list({status:'PENDING'}); },
+    empty:{title:'No pending registrations', sub:'When a teacher submits a new-student request, it appears here for your approval.', icon:'check'},
+    row:pendRow,
+    onAction:function(id,act,rowEl){
+      var name=(rowEl.querySelector('.row-title')||{}).textContent||'';
+      if(act==='approve'){
+        SE.ui.confirm({title:'Approve this registration?',body:'This creates a permanent Student ID for '+name+' and their first admission. The ID is never reused, and this can’t be undone.',confirmLabel:'Approve'})
+          .then(function(ok){ if(!ok)return;
+            SE.api.registrationRequests.approve(id).then(function(res){ pendPanel.reload(); revPanel.reload(); SE.shell.toast('Approved — '+res.student_code+' created for '+name+'.'); })
+              .catch(function(err){ SE.shell.toast((err&&err.message)||'Couldn’t approve — try again.'); });
+          });
+      } else if(act==='reject'){
+        SE.ui.confirm({title:'Reject this request?',body:'No student is created for '+name+'. The request is kept in history.',confirmLabel:'Reject',tone:'danger'})
+          .then(function(ok){ if(!ok)return;
+            SE.api.registrationRequests.reject(id).then(function(){ pendPanel.reload(); revPanel.reload(); SE.shell.toast(name+'’s request was rejected.'); })
+              .catch(function(err){ SE.shell.toast((err&&err.message)||'Couldn’t reject — try again.'); });
+          });
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>

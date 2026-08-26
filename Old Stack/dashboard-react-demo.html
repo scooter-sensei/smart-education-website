@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SmartEduTrack · React + Motion demo</title>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { acid: '#C6F24E', acid2: '#B4E82E', acidink: '#16240a', ink: '#20231c', canvas: '#0c0e0a' },
+    fontFamily: { display: ['"Clash Display"','system-ui','sans-serif'], body: ['"General Sans"','system-ui','sans-serif'] },
+  } } };
+</script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+<script type="importmap">
+{ "imports": {
+  "react": "https://esm.sh/react@18.3.1",
+  "react/": "https://esm.sh/react@18.3.1/",
+  "react-dom": "https://esm.sh/react-dom@18.3.1",
+  "react-dom/": "https://esm.sh/react-dom@18.3.1/",
+  "framer-motion": "https://esm.sh/framer-motion@11.11.17?external=react,react-dom"
+}}
+</script>
+<style>
+  body{background:#0c0e0a;font-family:'General Sans',system-ui,sans-serif}
+  mark.hl{background:#C6F24E;color:#16240a;padding:.02em .22em;border-radius:9px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+</style>
+</head>
+<body class="text-zinc-100">
+<div id="root" class="min-h-[100dvh] px-5 py-6 md:px-8 md:py-8"></div>
+
+<script type="text/babel" data-type="module" data-presets="react">
+import React, { useState, useEffect } from "react";
+import { createRoot } from "react-dom/client";
+import { motion, AnimatePresence, LayoutGroup, animate as fmAnimate } from "framer-motion";
+
+const spring = { type: "spring", stiffness: 300, damping: 26 };
+const inr = n => "₹" + Number(n).toLocaleString("en-IN");
+const kf = n => "₹" + (n/1000).toFixed(1).replace(/\.0$/,"") + "k";
+
+/* count-up driven by a Motion animation */
+function Num({ value, fmt = String, cls }) {
+  const [d, setD] = useState(fmt(value));
+  useEffect(() => {
+    const c = fmAnimate(0, value, { duration: 0.9, ease: [0.23,1,0.32,1], onUpdate: v => setD(fmt(Math.round(v))) });
+    return () => c.stop();
+  }, [value]);
+  return <span className={cls}>{d}</span>;
+}
+
+const container = { hidden: {}, show: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } } };
+const item = { hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 260, damping: 24 } } };
+
+function Card({ children, className = "", ...rest }) {
+  return (
+    <motion.div variants={item} whileHover={{ y: -4 }} whileTap={{ scale: 0.985 }} transition={spring}
+      className={"relative overflow-hidden rounded-[24px] border p-6 " + className} {...rest}>
+      {children}
+    </motion.div>
+  );
+}
+
+/* SVG donut whose arc springs to a new value */
+function Ring({ pct }) {
+  const C = 2 * Math.PI * 50;
+  return (
+    <div className="relative grid place-items-center min-h-[168px]">
+      <svg viewBox="0 0 120 120" className="w-[172px] h-[172px] -rotate-90">
+        <circle cx="60" cy="60" r="50" fill="none" strokeWidth="15" className="stroke-white/10" />
+        <motion.circle cx="60" cy="60" r="50" fill="none" strokeWidth="15" strokeLinecap="round"
+          className="stroke-acid" strokeDasharray={C}
+          animate={{ strokeDashoffset: C * (1 - pct / 100) }}
+          transition={{ type: "spring", stiffness: 55, damping: 16 }} />
+      </svg>
+      <div className="absolute text-center leading-none">
+        <div className="font-display font-semibold text-[42px] tracking-tight"><Num value={pct} fmt={v=>v+"%"} /></div>
+        <div className="text-xs text-white/50 mt-1.5">collected</div>
+      </div>
+    </div>
+  );
+}
+
+const CYCLES = [
+  { m: "Jun", collected: 6700, billed: 6700 },
+  { m: "Jul", collected: 5500, billed: 6700 },
+  { m: "Aug", collected: 2900, billed: 6700, now: true },
+];
+const DEBTORS = [ ["Rahul Roy", 3450], ["Riya Sen", 1100], ["Sneha Das", 450] ];
+const INIT_TASKS = [
+  { id: 31, name: "Meherzad Irani", sub: "Class 9 · by Rupa Konar" },
+  { id: 34, name: "Sana Qureshi", sub: "Class 11 · by Udayan Choudhury" },
+  { id: 32, name: "Ritwik Saha", sub: "Class 12 · by Raj Bharti" },
+  { id: 33, name: "Ananya Bose", sub: "Class 10 · by Udayan Choudhury" },
+];
+const initials = s => s.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
+
+const Tick = () => <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>;
+const Cross = () => <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>;
+
+function App() {
+  const [view, setView] = useState("cycle");     // 'cycle' | 'all'
+  const [tasks, setTasks] = useState(INIT_TASKS);
+
+  const stat = view === "cycle"
+    ? { collected: 2900, billed: 6700, pct: 43, comm: 1450, label: "August 2026" }
+    : { collected: 15100, billed: 20100, pct: 75, comm: 7550, label: "All cycles" };
+
+  const maxB = Math.max(...CYCLES.map(c => c.billed));
+
+  return (
+    <div className="max-w-[1140px] mx-auto">
+      {/* hint bar */}
+      <div className="mb-5 rounded-2xl border border-acid/25 bg-acid/[0.06] px-4 py-2.5 text-[13px] text-acid/90 flex flex-wrap gap-x-4 gap-y-1">
+        <span className="font-semibold text-acid">Live React + Framer&nbsp;Motion</span>
+        <span className="text-white/55">Try: toggle the cycle · approve/reject a request · hover & press cards · drag the coin</span>
+      </div>
+
+      <p className="flex items-center gap-2 text-xs font-semibold tracking-[.14em] uppercase text-white/50">
+        <motion.span className="w-[7px] h-[7px] rounded-full bg-acid2"
+          animate={{ boxShadow: ["0 0 0 4px rgba(180,232,46,.22)","0 0 0 8px rgba(180,232,46,.01)","0 0 0 4px rgba(180,232,46,.22)"] }}
+          transition={{ duration: 2.4, repeat: Infinity }} />
+        Tuesday, 25 August 2026
+      </p>
+      <h1 className="font-display font-semibold text-[clamp(28px,4vw,44px)] leading-[1.02] tracking-tight mt-3">
+        Good afternoon, <mark className="hl">Santana</mark>
+      </h1>
+
+      {/* segmented toggle with a layoutId sliding pill */}
+      <LayoutGroup>
+        <div className="mt-5 inline-flex rounded-full bg-white/[0.06] p-1 text-[13px] font-semibold">
+          {[["cycle","This cycle"],["all","All time"]].map(([k,lab]) => (
+            <button key={k} onClick={() => setView(k)} className="relative px-4 py-2 rounded-full">
+              {view === k && <motion.div layoutId="pill" className="absolute inset-0 rounded-full bg-acid" transition={{ type:"spring", stiffness:400, damping:32 }} />}
+              <span className={"relative z-10 " + (view === k ? "text-acidink" : "text-white/60")}>{lab}</span>
+            </button>
+          ))}
+        </div>
+      </LayoutGroup>
+
+      <motion.div variants={container} initial="hidden" animate="show"
+        className="mt-5 grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[minmax(0,auto)]">
+
+        {/* Ring — spans 2 rows */}
+        <Card className="md:col-span-1 md:row-span-2 bg-[#12150e] border-acid/15 flex flex-col">
+          <div className="pointer-events-none absolute -top-16 -right-10 w-52 h-52 rounded-full bg-[radial-gradient(circle,rgba(198,242,78,.16),transparent_70%)]" />
+          <div className="flex items-center justify-between text-[13px] font-semibold relative z-10">
+            <span>{stat.label}</span>
+            <span className="text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full bg-acid text-acidink">{view==="cycle"?"Open":"Total"}</span>
+          </div>
+          <div className="relative z-10"><Ring pct={stat.pct} /></div>
+          <p className="relative z-10 text-center text-[13.5px] text-white/55 mt-auto">
+            <b className="font-display text-white font-semibold">{inr(stat.collected)}</b> of {inr(stat.billed)}
+          </p>
+        </Card>
+
+        {/* Bars */}
+        <Card className="md:col-span-2 bg-ink border-white/5 flex flex-col gap-3">
+          <div className="flex items-baseline justify-between text-[13.5px] font-semibold">
+            <span>Collections</span><span className="text-white/45 font-medium text-xs">last 3 cycles</span>
+          </div>
+          <div className="flex items-end gap-4 flex-1 min-h-[120px]">
+            {CYCLES.map((c,i) => {
+              const h = Math.round(c.collected / maxB * 100);
+              return (
+                <div key={c.m} className="flex-1 flex flex-col items-center gap-2 justify-end h-full">
+                  <b className={"font-display font-semibold text-[15px] "+(c.now?"text-acid2":"text-white")}>{kf(c.collected)}</b>
+                  <div className="relative w-full max-w-[62px] flex-1 rounded-[13px] overflow-hidden bg-white/[0.05]">
+                    <motion.div className={"absolute inset-0 origin-bottom "+(c.now?"bg-gradient-to-t from-acid2 to-acid":"bg-[#A9C15E]")}
+                      initial={{ scaleY: 0 }} animate={{ scaleY: h/100 }}
+                      transition={{ type:"spring", stiffness:120, damping:20, delay: 0.15 + i*0.09 }} />
+                  </div>
+                  <span className="text-xs font-semibold text-white/55">{c.m}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Dues — lime, spans 2 rows, draggable coin inside */}
+        <Card className="md:col-span-1 md:row-span-2 bg-acid text-acidink border-acid flex flex-col">
+          <div className="flex items-start justify-between text-[13.5px] font-semibold">
+            <span>Outstanding dues</span>
+            <motion.div drag dragSnapToOrigin dragElastic={0.5} whileDrag={{ scale: 1.12, rotate: -8 }} transition={spring}
+              title="drag me" className="cursor-grab active:cursor-grabbing w-9 h-9 rounded-full bg-acidink/90 grid place-items-center text-acid text-[13px] font-bold select-none">₹</motion.div>
+          </div>
+          <b className="font-display font-bold text-[clamp(34px,4.4vw,46px)] tracking-tight leading-none mt-3.5">{inr(5000)}</b>
+          <p className="text-[13.5px] font-medium mt-1.5 opacity-80">3 students owe you</p>
+          <ul className="mt-4">
+            {DEBTORS.map(([n,a]) => (
+              <li key={n} className="flex items-center justify-between text-[13.5px] font-medium py-2 border-t border-acidink/20">
+                <span>{n}</span><b className="font-semibold tabular-nums">{inr(a)}</b>
+              </li>
+            ))}
+          </ul>
+          <motion.button whileTap={{ scale: 0.95 }} className="mt-auto self-start inline-flex items-center gap-2 bg-acidink text-acid text-[13.5px] font-semibold px-4 py-2.5 rounded-xl">
+            Collect now →
+          </motion.button>
+        </Card>
+
+        {/* Stat strip — divided, count-up */}
+        <Card className="md:col-span-2 bg-ink border-white/5">
+          <div className="flex divide-x divide-white/10">
+            {[["Active students",4,true],["Active teachers",4,false],["Active enrolments",6,false]].map(([lab,val,lime]) => (
+              <div key={lab} className="flex-1 flex items-center gap-3 px-2.5">
+                <span className={"w-9 h-9 rounded-xl grid place-items-center "+(lime?"bg-acid text-acidink":"bg-white/10 text-white/60")}>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0 1 16 0v2"/></svg>
+                </span>
+                <div>
+                  <b className="font-display font-semibold text-[30px] tracking-tight leading-none"><Num value={val} /></b>
+                  <span className="block text-[12.5px] text-white/55 mt-1">{lab}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Needs your eye — AnimatePresence + layout reflow */}
+        <Card className="md:col-span-4 bg-ink border-white/5">
+          <div className="flex items-center justify-between text-[13.5px] font-semibold">
+            <span>Needs your eye</span>
+            <motion.span layout className="text-xs font-bold px-2.5 py-1 rounded-full bg-acid text-acidink tabular-nums">{tasks.length}</motion.span>
+          </div>
+          <p className="text-[12px] font-semibold tracking-wider uppercase text-white/45 mt-4 mb-1">New sign-ups</p>
+          <LayoutGroup>
+            <AnimatePresence mode="popLayout" initial={false}>
+              {tasks.length === 0 && (
+                <motion.p key="empty" initial={{opacity:0}} animate={{opacity:1}} className="text-[13px] text-white/50 py-3">All caught up — nothing waiting.</motion.p>
+              )}
+              {tasks.map(t => (
+                <motion.div key={t.id} layout
+                  initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: 60, transition: { duration: 0.2 } }}
+                  transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  className="flex items-center gap-3 py-2.5 border-t border-white/8">
+                  <span className="w-9 h-9 flex-none rounded-xl grid place-items-center bg-acid text-acidink text-[12.5px] font-bold">{initials(t.name)}</span>
+                  <div className="flex-1 min-w-0">
+                    <b className="text-[14px] font-semibold block leading-tight">{t.name}</b>
+                    <span className="text-[12px] text-white/50">{t.sub}</span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <motion.button whileTap={{ scale: 0.85 }} onClick={() => setTasks(x => x.filter(y => y.id !== t.id))}
+                      className="w-8 h-8 rounded-lg grid place-items-center bg-acid text-acidink"><Tick/></motion.button>
+                    <motion.button whileTap={{ scale: 0.85 }} onClick={() => setTasks(x => x.filter(y => y.id !== t.id))}
+                      className="w-8 h-8 rounded-lg grid place-items-center bg-white/10 text-white/60 hover:text-white"><Cross/></motion.button>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </LayoutGroup>
+        </Card>
+
+      </motion.div>
+
+      <p className="text-center text-[12px] text-white/35 mt-8">
+        Same content as the live app · rendered with React 18 + Framer Motion (via CDN, no build) · production would be Vite + React + Tailwind + Motion
+      </p>
+    </div>
+  );
+}
+
+createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

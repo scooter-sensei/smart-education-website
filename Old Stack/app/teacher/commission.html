@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Commission · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.TEACHER);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>My Commission</h1>
+    <p>You earn 50% of the fees collected for your subjects. Commission accrues as students pay — here’s what you’ve earned, what’s been paid out, and what’s still due.</p>
+  </div>
+
+  <div class="kpi-strip kpi-3" id="kpis" aria-label="Commission summary" aria-busy="true">
+    <div class="skel" style="grid-column:1/-1"><div class="skel-row"></div></div>
+  </div>
+
+  <section class="panel" aria-labelledby="mH">
+    <div class="panel-head"><h2 id="mH">By month</h2><span class="count" id="monthsCount"></span></div>
+    <div id="monthsBody"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="pH">
+    <div class="panel-head"><h2 id="pH">Payouts received</h2><span class="count" id="payoutsCount"></span></div>
+    <div id="payoutsBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('teacher/commission.html');
+  var esc=SE.esc, money=SE.money;
+  var METHOD={CASH:'Cash',UPI:'UPI',BANK_TRANSFER:'Bank transfer',CHEQUE:'Cheque'};
+  var KB=document.getElementById('kpis');
+  var mBody=document.getElementById('monthsBody'), mCount=document.getElementById('monthsCount');
+  var pBody=document.getElementById('payoutsBody'), pCount=document.getElementById('payoutsCount');
+
+  function monthLabel(m){ try{ return new Date(m+'-01T00:00:00').toLocaleDateString('en-GB',{month:'long',year:'numeric'}); }catch(e){ return m; } }
+  function cell(label,value,foot,cls){ return '<div class="kpi"><p class="kl">'+esc(label)+'</p><p class="kv">'+value+'</p>'+(foot?'<p class="kf'+(cls?' '+cls:'')+'">'+esc(foot)+'</p>':'')+'</div>'; }
+  function stagger(body){ for(var i=0;i<body.children.length;i++){ body.children[i].style.setProperty('--i',Math.min(i,12)); body.children[i].classList.add('se-in'); } }
+
+  function render(){
+    mBody.innerHTML=SE.ui.skeleton(2); pBody.innerHTML=SE.ui.skeleton(1); KB.setAttribute('aria-busy','true'); mCount.textContent=''; pCount.textContent='';
+    SE.api.teacher.commission().then(function(c){
+      KB.setAttribute('aria-busy','false');
+      KB.innerHTML=[
+        cell('Commission earned', money(c.commission), 'at '+c.rate+'% of collected'),
+        cell('Paid out', money(c.paid)),
+        cell('Balance due', money(c.balance), null, c.balance>0?'warn':'pos')
+      ].join('');
+
+      if(!c.months.length){ mBody.innerHTML=SE.ui.empty('No commission yet','As students pay fees for your subjects, your monthly commission shows up here.','box'); mCount.textContent='0'; }
+      else {
+        mBody.innerHTML=c.months.map(function(m){
+          var subj=m.subjects.map(function(s){ return esc(s.subject)+' '+money(s.collected); }).join(' · ');
+          return '<div class="row"><div class="row-main"><p class="row-title">'+esc(monthLabel(m.month))+' · <b style="font-weight:650;color:var(--green)">'+money(m.commission)+'</b></p>'+
+            '<p class="row-sub">Collected '+money(m.collected)+' — '+subj+'</p></div>'+
+            '<div class="row-acts"><span class="chip c-green">'+c.rate+'%</span></div></div>';
+        }).join('');
+        mCount.textContent=c.months.length; stagger(mBody);
+      }
+
+      if(!c.payouts.length){ pBody.innerHTML=SE.ui.empty('No payouts yet','When the centre pays your commission, each payout is listed here.','box'); pCount.textContent='0'; }
+      else {
+        pBody.innerHTML=c.payouts.map(function(p){
+          return '<div class="row"><div class="row-main"><p class="row-title"><b style="font-weight:650">'+money(p.amount)+'</b></p>'+
+            '<p class="row-sub">'+esc(METHOD[p.method]||p.method)+' · '+SE.fmtDate(p.paid_on)+(p.reference?' · ref '+esc(p.reference):'')+'</p></div></div>';
+        }).join('');
+        pCount.textContent=c.payouts.length; stagger(pBody);
+      }
+    }).catch(function(){
+      KB.setAttribute('aria-busy','false');
+      mBody.innerHTML=SE.ui.errorBox('cmRetry'); var r=document.getElementById('cmRetry'); if(r) r.addEventListener('click',render);
+    });
+  }
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,48 +1,41 @@
-# Smart Education Website & Portals
+# Smart Education — Website & Portals
 
-The official web platform and portal system for **Smart Education Computer Centre**, located in Kanyapur, Asansol. This project provides coaching information (Class I-XII, NEET & JEE preparation), professional job-ready computer courses, and portal access dashboards for Students, Teachers, and Administrators.
+The web platform for **Smart Education Computer Centre**, Kanyapur, Asansol — coaching (Class I–XII, NEET & JEE) and job-ready computer courses. It comprises a **public marketing website** and a **staff console** (SmartEduTrack) for the Super Admin and teachers to run the centre: academic sessions, classes, subjects, teacher–subject authorisations, student registrations, enrolments, attendance, and the full fee / commission / payout flow. Students have no login; their records are kept for them by staff.
 
----
+This repository holds two implementations, side by side.
 
-## 🌟 Features
+## `Old Stack/` — the original static build
 
-- **Multi-Role Portals:** Custom user interfaces designed specifically for:
-  - **Students (`student.html`):** Access to classes, marks, profiles, and fee schedules.
-  - **Teachers (`teacher.html`):** Management tools for student lists, progress tracking, and attendance.
-  - **Administrators (`admin.html`):** Management panel for overseeing center operations, metrics, and accounts.
-- **Multilingual Support (`translate.js`):** Built-in support for **English**, **Bengali (বাংলা)**, and **Hindi (हिन्दी)** using a custom-styled wrapper around the Google Translate widget that persists preferences site-wide via cookies.
-- **Theme System (`theme.js`):** Support for dark/light mode toggle with seamless state persistence.
-- **Modern UI & Aesthetic:** Built with premium typography (Zodiak & General Sans), grain overlay texture, self-drawing hand-drawn underlines for emphasis, and smooth double-bezel layouts.
-- **Responsive Layouts:** Designed to adapt beautifully to desktops, tablets, and mobile devices.
+Vanilla **HTML5 / CSS3 / ES6+**, no build step. Contains:
 
----
+- The **public marketing site** (`index.html`, `portal.css/js`) — coaching info, courses, teacher profiles, campus/award photography.
+- **Multilingual support** (`translate.js`) — English, Bengali (বাংলা), Hindi (हिन्दी), persisted site-wide.
+- A **theme system** (`theme.js`) — light/dark with persistence.
+- The **staff console** under `app/` — a `window.SE` namespace of IIFE modules (`app/shared/*.js`) over an Apple-HIG portal design system, with a mock data layer.
+- Early portal landing pages kept for reference in `_legacy/` and `future/`, plus `dashboard-react-demo.html`, a single-file React + Framer Motion proof-of-concept of the bento dashboard.
 
-## 🛠️ Technology Stack
+Open `index.html` (or serve the folder) to run it.
 
-- **Core:** HTML5, CSS3 (Vanilla), and JavaScript (ES6+).
-- **Typography:** General Sans (Sans-serif) & Zodiak (Serif) via Fontshare.
-- **Icons:** SVG assets (housed in `icon.svg` / assets).
-- **Localization:** Google Translate API Widget integration.
+## `New Stack/` — the staff console, rebuilt
 
----
+A ground-up rewrite of the **staff console** (the public marketing site was not ported) in a modern SPA stack.
 
-## 📁 Repository Structure
+- **Vite + React 19 + TypeScript**
+- **Tailwind CSS v4** — theme-aware tokens: an Apple-HIG portal palette plus a playful-bento "lime / Clash Display" dashboard identity, light + dark.
+- **Framer Motion** — spring physics, `AnimatePresence`, shared-element transitions, optimistic list removals.
+- **React Router 7** (role-guarded routes, per-screen code-splitting) and **TanStack Query 5** over a typed mock data layer.
 
-```text
-├── index.html            # Main home page for Smart Education Centre
-├── login.html            # Unified portal authentication page
-├── accounts.html         # Accounts portal page
-├── student.html          # Student dashboard & profile portal
-├── teacher.html          # Teacher panel & student management portal
-├── admin.html            # Admin dashboard for operational metrics
-├── 404.html              # Custom elegant 404 page
-├── portal.js             # Shared behaviors for dashboards & rails
-├── translate.js          # Client-side English/Bengali/Hindi translation engine
-├── theme.js              # Site-wide dark & light theme management
-├── portal.css            # Layout styles for dashboard & UI tokens
-├── manifest.webmanifest  # Progressive web app (PWA) configuration
-├── icon.svg              # Core icon SVG asset
-└── assets/               # Local images, logos, and stylesheets
+`src/lib/api.ts` is a faithful, typed port of the old console's mock: it resolves ERD-shaped rows from an in-memory DB persisted to `sessionStorage`, so the whole app works end-to-end before a real backend exists. A `request()` HTTP seam is in place for swapping in a live `/api/v1` later.
+
+```bash
+cd "New Stack"
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # type-check + production build
 ```
 
----
+Demo sign-in: any email works; include **"admin"** in the address for the Super Admin console, anything else for a Teacher.
+
+## Status
+
+The New Stack is a complete port of every staff-console screen (1 login + 18 admin + 6 teacher), verified across both roles and both themes, with code-splitting and reduced-motion support. The backend is still the mock; wiring a real API is the remaining step.

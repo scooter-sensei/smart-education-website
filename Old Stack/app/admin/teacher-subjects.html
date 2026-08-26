@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher – Subject Auth · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.SUPER_ADMIN);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Teacher – Subject Authorization</h1>
+    <p>Authorize a teacher to teach a subject. Only authorized teacher-subject pairs can be used when creating enrollments. Removing an authorization never affects enrollments that already used it.</p>
+  </div>
+
+  <section class="card-pad create-card">
+    <h2 class="card-h">Authorize a teacher</h2>
+    <p class="card-hint">Pick an active teacher and an active subject. A teacher can be authorized for many subjects.</p>
+    <form id="createForm" novalidate>
+      <div class="f-grid f-2">
+        <label class="fld2"><span class="f-label">Teacher</span>
+          <select class="field" name="teacher_id" id="selTeacher"><option value="">Loading teachers…</option></select>
+          <span class="fe" data-err="teacher_id"></span></label>
+        <label class="fld2"><span class="f-label">Subject</span>
+          <select class="field" name="subject_id" id="selSubject"><option value="">Loading subjects…</option></select>
+          <span class="fe" data-err="subject_id"></span></label>
+      </div>
+      <div class="form-actions"><button class="btn b-filled" type="submit" id="createBtn">Authorize</button></div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>All authorizations</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('admin/teacher-subjects.html');
+  var esc=SE.esc, form=document.getElementById('createForm');
+  function activePill(a){ return a?'<span class="pill pill-green">Active</span>':'<span class="pill pill-gray">Removed</span>'; }
+  function actionBtn(a){ return a?'<button class="btn b-red-tinted b-xs" type="button" data-act="deactivate">Remove</button>':'<button class="btn b-tinted b-xs" type="button" data-act="reactivate">Restore</button>'; }
+
+  /* populate the selects */
+  function fillSelect(sel, ph, items){
+    sel.innerHTML='<option value="">'+esc(ph)+'</option>'+items.map(function(i){return '<option value="'+i.id+'">'+esc(i.name)+'</option>';}).join('');
+  }
+  SE.api.teacherSubjects.options().then(function(o){
+    fillSelect(document.getElementById('selTeacher'),'Select a teacher…',o.teachers);
+    fillSelect(document.getElementById('selSubject'),'Select a subject…',o.subjects);
+  }).catch(function(){
+    document.getElementById('selTeacher').innerHTML='<option value="">Couldn’t load teachers</option>';
+    document.getElementById('selSubject').innerHTML='<option value="">Couldn’t load subjects</option>';
+  });
+
+  var panel=SE.ui.listPanel({
+    mount:'listBody', count:'listCount',
+    fetch:function(){ return SE.api.teacherSubjects.list(); },
+    empty:{title:'No authorizations yet', sub:'Authorize a teacher for a subject above to get started.', icon:'box'},
+    row:function(x){
+      return '<div class="row" data-id="'+x.id+'"><div class="row-main">'+
+        '<p class="row-title">'+esc(x.teacher)+'</p><p class="row-sub">Authorized for '+esc(x.subject)+'</p></div>'+
+        '<div class="row-acts">'+activePill(x.is_active)+actionBtn(x.is_active)+'</div></div>';
+    },
+    onAction:function(id,act,rowEl){
+      var willActive=(act==='reactivate');
+      function apply(){
+        SE.api.teacherSubjects.setActive(id,willActive).then(function(){
+          var p=rowEl.querySelector('.pill'); if(p) p.outerHTML=activePill(willActive);
+          var b=rowEl.querySelector('[data-act]'); if(b) b.outerHTML=actionBtn(willActive);
+          SE.shell.toast('Authorization '+(willActive?'restored.':'removed.'));
+        }).catch(function(){ SE.shell.toast('Couldn’t update — try again.'); });
+      }
+      if(willActive) apply();
+      else SE.ui.confirm({title:'Remove this authorization?',body:'The teacher can no longer be assigned to new enrollments for this subject. Enrollments that already used it are unaffected.',confirmLabel:'Remove',tone:'danger'}).then(function(ok){ if(ok)apply(); });
+    }
+  });
+
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    SE.ui.clearErrors(form);
+    var ok=SE.ui.validate(form,{
+      teacher_id:function(v){ return v?null:'Choose a teacher.'; },
+      subject_id:function(v){ return v?null:'Choose a subject.'; }
+    });
+    if(!ok)return;
+    var btn=document.getElementById('createBtn'); btn.disabled=true;
+    SE.api.teacherSubjects.create({teacher_id:form.elements.teacher_id.value,subject_id:form.elements.subject_id.value})
+      .then(function(){ form.reset(); btn.disabled=false; panel.reload(); SE.shell.toast('Teacher authorized.'); })
+      .catch(function(err){ btn.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t authorize — try again.'); });
+  });
+})();
+</script>
+</body>
+</html>

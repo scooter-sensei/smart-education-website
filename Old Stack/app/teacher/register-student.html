@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Register a Student · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.TEACHER);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Register a Student</h1>
+    <p>Submit a new student’s details for approval. When the admin approves, a permanent Student ID is created and the student’s first admission begins. Nothing is created until then.</p>
+  </div>
+
+  <section class="card-pad create-card">
+    <h2 class="card-h">New registration</h2>
+    <p class="card-hint">Give the student and guardian details. You can track the request’s status below until the admin reviews it.</p>
+    <form id="regForm" novalidate>
+      <div class="f-grid f-2">
+        <label class="fld2"><span class="f-label">Student’s full name</span><input class="field" name="full_name" type="text" placeholder="e.g. Ananya Bose" autocomplete="off"><span class="fe" data-err="full_name"></span></label>
+        <label class="fld2"><span class="f-label">Class</span><select class="field" name="klass" id="regClass"></select><span class="fe" data-err="klass"></span></label>
+        <label class="fld2"><span class="f-label">Guardian’s name</span><input class="field" name="guardian_name" type="text" placeholder="e.g. Sujata Bose" autocomplete="off"><span class="fe" data-err="guardian_name"></span></label>
+        <label class="fld2"><span class="f-label">Guardian’s phone</span><input class="field" name="guardian_phone" type="tel" inputmode="tel" placeholder="98300 00000"><span class="fe" data-err="guardian_phone"></span></label>
+        <label class="fld2"><span class="f-label">Student’s phone <span style="font-weight:400;color:var(--tertiary)">· optional</span></span><input class="field" name="phone" type="tel" inputmode="tel" placeholder="98300 00000"><span class="fe" data-err="phone"></span></label>
+        <label class="fld2"><span class="f-label">Session</span><input class="field" name="session" id="regSession" disabled></label>
+        <label class="fld2" style="grid-column:1/-1"><span class="f-label">Address <span style="font-weight:400;color:var(--tertiary)">· optional</span></span><textarea class="field" name="address" rows="2" placeholder="Locality, town"></textarea><span class="fe" data-err="address"></span></label>
+      </div>
+      <div class="form-actions"><button class="btn b-filled" type="submit" id="regBtn">Submit for approval</button></div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>My submissions</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('teacher/register-student.html');
+  var esc=SE.esc, form=document.getElementById('regForm');
+  var sessionName='';
+
+  /* class + session options */
+  SE.api.students.activeClasses().then(function(list){
+    document.getElementById('regClass').innerHTML='<option value="" disabled selected>Select a class</option>'+
+      list.map(function(c){ return '<option value="'+esc(c)+'">'+esc(c)+'</option>'; }).join('');
+  });
+  SE.api.students.activeSession().then(function(name){ sessionName=name||''; document.getElementById('regSession').value=name||'—'; });
+
+  var panel=SE.ui.listPanel({
+    mount:'listBody', count:'listCount',
+    fetch:function(){ return SE.api.registrationRequests.list({mine:true}); },
+    empty:{title:'No submissions yet', sub:'Registrations you submit appear here so you can follow their status.', icon:'box'},
+    row:function(r){
+      return '<div class="row" data-id="'+r.id+'"><div class="row-main">'+
+        '<p class="row-title">'+esc(r.full_name)+'</p>'+
+        '<p class="row-sub">'+esc(r.klass)+' · '+esc(r.session)+' · guardian '+esc(r.guardian_name)+(r.guardian_phone?' ('+esc(r.guardian_phone)+')':'')+'</p>'+
+        '<p class="row-sub">Submitted '+SE.fmtDate(r.created_at)+(r.reviewed_at?' · reviewed '+SE.fmtDate(r.reviewed_at):'')+'</p></div>'+
+        '<div class="row-acts">'+SE.statusPill('request',r.status).outerHTML+'</div></div>';
+    }
+  });
+
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    SE.ui.clearErrors(form);
+    var ok=SE.ui.validate(form,{
+      full_name:function(v){ return v?null:'Enter the student’s name.'; },
+      klass:function(v){ return v?null:'Choose a class.'; },
+      guardian_name:function(v){ return v?null:'Enter the guardian’s name.'; },
+      guardian_phone:function(v){ if(!v)return 'Enter the guardian’s phone.'; return /^[0-9+\-\s]{7,15}$/.test(v)?null:'Enter a valid phone number.'; },
+      phone:function(v){ if(!v)return null; return /^[0-9+\-\s]{7,15}$/.test(v)?null:'Enter a valid phone, or leave it blank.'; }
+    });
+    if(!ok) return;
+    var btn=document.getElementById('regBtn'); btn.disabled=true;
+    SE.api.registrationRequests.create({
+      full_name:form.elements.full_name.value.trim(),
+      klass:form.elements.klass.value,
+      session:sessionName,
+      guardian_name:form.elements.guardian_name.value.trim(),
+      guardian_phone:form.elements.guardian_phone.value.trim(),
+      phone:form.elements.phone.value.trim(),
+      address:form.elements.address.value.trim()
+    }).then(function(row){
+      form.reset(); document.getElementById('regClass').selectedIndex=0; document.getElementById('regSession').value=sessionName||'—';
+      btn.disabled=false; panel.reload(); SE.shell.toast('Submitted — '+row.full_name+'’s registration is awaiting approval.');
+    }).catch(function(err){ btn.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t submit — try again.'); });
+  });
+})();
+</script>
+</body>
+</html>

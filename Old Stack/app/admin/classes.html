@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Classes · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.SUPER_ADMIN);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Classes</h1>
+    <p>The reusable class master. Classes are used for student placement and fee configuration, and stay available across sessions. Deactivate rather than delete.</p>
+  </div>
+
+  <section class="card-pad create-card">
+    <h2 class="card-h">New class</h2>
+    <p class="card-hint">Add a class and its numeric level (used to order classes and to suggest promotions).</p>
+    <form id="createForm" novalidate>
+      <div class="f-grid f-2">
+        <label class="fld2"><span class="f-label">Class name</span><input class="field" name="name" type="text" placeholder="e.g. Class 7" autocomplete="off"><span class="fe" data-err="name"></span></label>
+        <label class="fld2"><span class="f-label">Level</span><input class="field" name="level" type="number" inputmode="numeric" min="1" placeholder="e.g. 7"><span class="fe" data-err="level"></span></label>
+      </div>
+      <div class="form-actions"><button class="btn b-filled" type="submit" id="createBtn">Add class</button></div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>All classes</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('admin/classes.html');
+  var esc=SE.esc, form=document.getElementById('createForm');
+  function activePill(a){ return a?'<span class="pill pill-green">Active</span>':'<span class="pill pill-gray">Inactive</span>'; }
+  function actionBtn(a){ return a?'<button class="btn b-red-tinted b-xs" type="button" data-act="deactivate">Deactivate</button>':'<button class="btn b-tinted b-xs" type="button" data-act="reactivate">Reactivate</button>'; }
+
+  var panel=SE.ui.listPanel({
+    mount:'listBody', count:'listCount',
+    fetch:function(){ return SE.api.classes.list(); },
+    empty:{title:'No classes yet', sub:'Add your first class above.', icon:'box'},
+    row:function(c){
+      return '<div class="row" data-id="'+c.id+'"><div class="row-main">'+
+        '<p class="row-title">'+esc(c.name)+'</p><p class="row-sub">Level '+c.level+'</p></div>'+
+        '<div class="row-acts">'+activePill(c.is_active)+actionBtn(c.is_active)+'</div></div>';
+    },
+    onAction:function(id,act,rowEl){
+      var willActive=(act==='reactivate');
+      function apply(){
+        SE.api.classes.setActive(id,willActive).then(function(){
+          var p=rowEl.querySelector('.pill'); if(p) p.outerHTML=activePill(willActive);
+          var b=rowEl.querySelector('[data-act]'); if(b) b.outerHTML=actionBtn(willActive);
+          SE.shell.toast('Class '+(willActive?'reactivated.':'deactivated.'));
+        }).catch(function(){ SE.shell.toast('Couldn’t update — try again.'); });
+      }
+      if(willActive) apply();
+      else SE.ui.confirm({title:'Deactivate this class?',body:'It can no longer be used for new admissions or fee configuration. Existing records are unaffected.',confirmLabel:'Deactivate',tone:'danger'}).then(function(ok){ if(ok)apply(); });
+    }
+  });
+
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    SE.ui.clearErrors(form);
+    var ok=SE.ui.validate(form,{
+      name:function(v){ return v?null:'Enter a class name.'; },
+      level:function(v){ if(!v)return 'Enter a level.'; var n=Number(v); if(!(n>0)||n%1!==0)return 'Level must be a whole number above 0.'; return null; }
+    });
+    if(!ok)return;
+    var btn=document.getElementById('createBtn'); btn.disabled=true;
+    SE.api.classes.create({name:form.elements.name.value.trim(),level:form.elements.level.value})
+      .then(function(){ form.reset(); btn.disabled=false; panel.reload(); SE.shell.toast('Class added.'); })
+      .catch(function(err){ btn.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t add the class.'); });
+  });
+})();
+</script>
+</body>
+</html>

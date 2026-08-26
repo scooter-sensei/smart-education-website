@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payments · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.SUPER_ADMIN);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Payments</h1>
+    <p>Record a payment and allocate it across the student’s outstanding fees. Whatever you don’t allocate is kept as credit — an advance against future months. Allocating a fee in full marks it paid.</p>
+  </div>
+
+  <section class="card-pad create-card">
+    <h2 class="card-h">Record a payment</h2>
+    <p class="card-hint">Pick a student who owes fees, enter the amount and method, then choose how it settles their dues.</p>
+    <form id="payForm" novalidate>
+      <div class="f-grid f-3">
+        <label class="fld2"><span class="f-label">Student</span><select class="field" name="student_id" id="payStudent"></select><span class="fe" data-err="student_id"></span></label>
+        <label class="fld2"><span class="f-label">Amount (₹)</span><input class="field" name="amount" id="payAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="e.g. 2250"><span class="fe" data-err="amount"></span></label>
+        <label class="fld2"><span class="f-label">Method</span><select class="field" name="method" id="payMethod">
+          <option value="CASH">Cash</option><option value="UPI">UPI</option><option value="BANK_TRANSFER">Bank transfer</option><option value="CHEQUE">Cheque</option>
+        </select><span class="fe" data-err="method"></span></label>
+        <label class="fld2"><span class="f-label">Reference <span style="font-weight:400;color:var(--tertiary)">· optional</span></span><input class="field" name="reference" type="text" placeholder="UPI / cheque / txn no." autocomplete="off"><span class="fe" data-err="reference"></span></label>
+        <label class="fld2"><span class="f-label">Paid on</span><input class="field" name="paid_on" id="payDate" type="date"><span class="fe" data-err="paid_on"></span></label>
+      </div>
+
+      <div class="alloc-block" id="allocBlock" hidden>
+        <div class="alloc-top">
+          <h3>Allocate to dues</h3>
+          <button class="btn b-gray b-xs" type="button" id="autoAlloc">Auto-allocate</button>
+        </div>
+        <div class="alloc-list" id="allocList"></div>
+        <p class="alloc-summary" id="allocSummary"></p>
+      </div>
+
+      <div class="form-actions"><button class="btn b-filled" type="submit" id="payBtn">Record payment</button></div>
+    </form>
+  </section>
+
+  <div class="list-tools" role="group" aria-label="Search payments">
+    <div class="search-wrap" style="flex:1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input class="field search" id="searchInput" type="search" placeholder="Search student, ID or reference" autocomplete="off" aria-label="Search payments">
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Recent payments</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('admin/payments.html');
+  var esc=SE.esc, money=SE.money;
+  var METHOD={CASH:'Cash',UPI:'UPI',BANK_TRANSFER:'Bank transfer',CHEQUE:'Cheque'};
+  var state={q:''};
+  var form=document.getElementById('payForm');
+  var amountEl=document.getElementById('payAmount');
+  var allocBlock=document.getElementById('allocBlock'), allocList=document.getElementById('allocList'), allocSummary=document.getElementById('allocSummary');
+
+  form.elements.paid_on.value=new Date().toISOString().slice(0,10);
+
+  function monthLabel(m){ try{ return new Date(m+'-01T00:00:00').toLocaleDateString('en-GB',{month:'short',year:'numeric'}); }catch(e){ return m; } }
+
+  /* all active students -> the picker; those who owe are shown first, and a
+     student with no dues can still be paid (recorded entirely as credit). */
+  function loadStudents(keep){
+    return SE.api.payments.students().then(function(list){
+      var sel=document.getElementById('payStudent');
+      sel.innerHTML='<option value="" disabled'+(keep?'':' selected')+'>'+(list.length?'Select a student':'No active students')+'</option>'+
+        list.map(function(s){ return '<option value="'+s.student_id+'">'+esc(s.student)+' · '+esc(s.student_code)+' · '+(s.due>0?'owes '+money(s.due):'no dues')+'</option>'; }).join('');
+      if(keep) sel.value='';
+    });
+  }
+  loadStudents().then(function(){
+    var pre=new URLSearchParams(location.search).get('student');
+    if(!pre) return;
+    var sel=document.getElementById('payStudent');
+    if([].some.call(sel.options,function(o){return o.value===pre;})){ sel.value=pre; sel.dispatchEvent(new Event('change',{bubbles:true})); }
+  });
+
+  document.getElementById('payStudent').addEventListener('change',function(){
+    var sid=this.value; if(!sid){ allocBlock.hidden=true; return; }
+    SE.api.payments.pendingRecords(sid).then(function(recs){
+      if(!recs.length){
+        allocList.innerHTML='<p class="alloc-empty">No current dues for this student — the full amount is recorded as credit (an advance).</p>';
+        allocBlock.hidden=false; recompute(); return;
+      }
+      allocList.innerHTML=recs.map(function(r){
+        return '<div class="alloc-row" data-rec="'+r.id+'" data-out="'+r.outstanding+'">'+
+          '<div class="alloc-info"><b>'+monthLabel(r.month)+' · '+esc(r.subject)+'</b><span>'+esc(r.klass)+' · outstanding '+money(r.outstanding)+'</span></div>'+
+          '<input class="field alloc-input" type="number" min="0" step="1" inputmode="numeric" max="'+r.outstanding+'" value="0" aria-label="Allocate to '+esc(r.subject)+'"></div>';
+      }).join('');
+      allocBlock.hidden=false;
+      var totalDue=recs.reduce(function(s,r){return s+r.outstanding;},0);
+      if(!amountEl.value) amountEl.value=totalDue;
+      recompute();
+    });
+  });
+
+  function allocInputs(){ return [].slice.call(allocList.querySelectorAll('.alloc-input')); }
+  function recompute(){
+    var amount=+amountEl.value||0, sum=0;
+    allocInputs().forEach(function(inp){
+      var out=+inp.closest('.alloc-row').getAttribute('data-out');
+      var v=+inp.value||0; if(v<0)v=0; if(v>out){ v=out; inp.value=out; }
+      sum+=v;
+    });
+    var over=sum>amount, credit=amount-sum;
+    allocSummary.classList.toggle('over',over);
+    if(over) allocSummary.innerHTML='Allocated <b>'+money(sum)+'</b> — that’s '+money(sum-amount)+' more than the payment of '+money(amount)+'.';
+    else allocSummary.innerHTML='Allocated <b>'+money(sum)+'</b> of '+money(amount)+(credit>0?' · <span class="credit">'+money(credit)+' kept as credit</span>':' · fully allocated');
+  }
+  allocList.addEventListener('input',function(e){ if(e.target.classList.contains('alloc-input')) recompute(); });
+  amountEl.addEventListener('input',recompute);
+
+  document.getElementById('autoAlloc').addEventListener('click',function(){
+    var remaining=+amountEl.value||0;
+    allocInputs().forEach(function(inp){
+      var out=+inp.closest('.alloc-row').getAttribute('data-out');
+      var give=Math.max(0,Math.min(out,remaining)); inp.value=give; remaining-=give;
+    });
+    recompute();
+  });
+
+  /* recent payments list */
+  function methodChip(m){ return '<span class="chip c-gray">'+esc(METHOD[m]||m)+'</span>'; }
+  function payRow(p){
+    var credit=p.amount-(p.allocated||0);
+    return '<div class="row inset-ava" data-id="'+p.id+'"><span class="acct-ava" aria-hidden="true">'+esc(initials(p.student))+'</span>'+
+      '<div class="row-main"><p class="row-title">'+esc(p.student)+' · <b style="font-weight:650">'+money(p.amount)+'</b></p>'+
+      '<p class="row-sub"><span class="lcode">'+esc(p.student_code)+'</span> · '+SE.fmtDate(p.paid_on)+(p.reference?' · ref '+esc(p.reference):'')+'</p>'+
+      '<p class="row-sub">Allocated '+money(p.allocated||0)+(credit>0?' · '+money(credit)+' credit':'')+'</p></div>'+
+      '<div class="row-acts">'+methodChip(p.method)+(credit>0?'<span class="chip c-orange">Credit</span>':'')+'</div></div>';
+  }
+  function initials(n){ return String(n||'?').trim().split(/\s+/).map(function(w){return w.charAt(0);}).slice(0,2).join('').toUpperCase(); }
+
+  var panel=SE.ui.listPanel({
+    mount:'listBody', count:'listCount',
+    fetch:function(){ return SE.api.payments.list(state.q?{q:state.q}:{}); },
+    empty:{title:'No payments match', sub:'Recorded payments appear here. Use the form above to record the first one.', icon:'box'},
+    row:payRow
+  });
+
+  var searchInput=document.getElementById('searchInput'), st;
+  searchInput.addEventListener('input',function(){ clearTimeout(st); st=setTimeout(function(){ state.q=searchInput.value; panel.reload(); },200); });
+
+  /* record */
+  form.addEventListener('submit',function(ev){
+    ev.preventDefault();
+    SE.ui.clearErrors(form);
+    var ok=SE.ui.validate(form,{
+      student_id:function(v){ return v?null:'Choose a student.'; },
+      amount:function(v){ if(!v)return 'Enter the amount paid.'; return (+v>0)?null:'Enter an amount greater than zero.'; }
+    });
+    if(!ok) return;
+    var amount=+amountEl.value, allocations=[];
+    allocInputs().forEach(function(inp){ var v=+inp.value||0; if(v>0) allocations.push({fee_record_id:+inp.closest('.alloc-row').getAttribute('data-rec'), amount:v}); });
+    var sum=allocations.reduce(function(s,a){return s+a.amount;},0);
+    if(sum>amount){ SE.shell.toast('Allocations exceed the payment amount — adjust and try again.'); return; }
+    var btn=document.getElementById('payBtn'); btn.disabled=true;
+    SE.api.payments.record({
+      student_id:form.elements.student_id.value, amount:amount, method:form.elements.method.value,
+      reference:form.elements.reference.value.trim(), paid_on:form.elements.paid_on.value, allocations:allocations
+    }).then(function(res){
+      form.reset(); form.elements.paid_on.value=new Date().toISOString().slice(0,10); form.elements.method.value='CASH';
+      allocBlock.hidden=true; allocList.innerHTML=''; allocSummary.textContent='';
+      btn.disabled=false;
+      loadStudents(); panel.reload();
+      SE.shell.toast('Payment recorded — '+money(res.payment.amount)+' from '+res.payment.student+(res.credit>0?' · '+money(res.credit)+' credit':'')+'.');
+    }).catch(function(err){ btn.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t record the payment.'); });
+  });
+})();
+</script>
+</body>
+</html>

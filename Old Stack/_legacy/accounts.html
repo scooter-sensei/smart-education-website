@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accounts · Smart Education</title>
+<link rel="icon" href="../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/logo.jpeg">
+<link rel="stylesheet" href="../portal.css">
+<script src="../theme.js"></script>
+<style>
+body{--maxw:760px}
+/* Segmented control */
+.seg{
+  position:relative;display:grid;grid-template-columns:1fr 1fr;
+  background:var(--fill);border-radius:11px;padding:3px;margin-top:6px;
+}
+.seg-thumb{
+  position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);
+  background:var(--card);border-radius:9px;
+  box-shadow:0 1px 4px rgba(0,0,0,.12),0 3px 8px rgba(0,0,0,.06);
+  transition:transform .26s var(--ease-drawer);
+}
+:root[data-theme="dark"] .seg-thumb{background:#636366}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .seg-thumb{background:#636366}}
+.seg button{
+  position:relative;z-index:1;border:none;background:none;cursor:pointer;
+  min-height:40px;border-radius:9px;font-size:14.5px;font-weight:600;color:var(--secondary);
+  transition:color .2s var(--ease-out),transform .12s var(--ease-out);
+}
+.seg button.on{color:var(--label)}
+.seg button:active{transform:scale(.97)}
+.seg .n{font-weight:600;opacity:.6;margin-left:5px}
+/* Initial avatars */
+.ini{
+  width:38px;height:38px;border-radius:50%;flex:none;color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:600;letter-spacing:.01em;
+}
+.ini-blue{background:var(--blue)}.ini-indigo{background:var(--indigo)}
+.ini-teal{background:var(--teal)}.ini-green{background:var(--green)}.ini-orange{background:var(--orange)}
+.acct-ava{width:38px;height:38px}
+/* Align row hairlines to the text edge (past the 38px avatar) */
+#listCard .row.inset-ava + .row.inset-ava::before{left:66px}
+/* Delete / confirm controls */
+.confirm{display:inline-flex;align-items:center;gap:7px}
+.confirm .q{font-size:13px;font-weight:600;color:var(--secondary);margin-right:2px}
+.demo-note{
+  display:flex;gap:10px;align-items:flex-start;
+  background:var(--tint-orange);color:var(--label);
+  border-radius:12px;padding:12px 14px;font-size:13.5px;font-weight:500;line-height:1.5;margin-top:16px;
+}
+.demo-note svg{flex:none;margin-top:2px;color:var(--orange)}
+@media (max-width:600px){#createBtn{width:100%}}
+</style>
+<script defer src="../translate.js"></script>
+</head>
+<body>
+<!-- LEGACY: pre-SmartEduTrack portal. Kept as reference; replaced screen-by-screen in later phases. Not linked from the live site. -->
+
+<header class="navbar" id="navbar">
+  <div class="nav-inner">
+    <span class="nav-lead">
+      <a class="nav-back" href="admin.html" aria-label="Back to the admin dashboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        Admin
+      </a>
+      <img src="../assets/logo.jpeg" alt="Smart Education logo"><span class="nl-txt">Accounts</span>
+    </span>
+    <span class="nav-title" id="navTitle">User management</span>
+    <span class="nav-trail">
+      <button class="nav-icon" id="themeBtn" type="button" aria-pressed="false" aria-label="Switch to dark appearance">
+        <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <a class="nav-btn" href="../app/login.html">Log out</a>
+    </span>
+  </div>
+</header>
+
+<main class="shell">
+  <h1 class="lg-title">User management</h1>
+  <p class="lg-sub">Create or remove student and teacher accounts. Accounts are made here by the office, never self-registered.</p>
+
+  <div class="seg" id="seg" role="tablist" aria-label="Account type">
+    <span class="seg-thumb" id="segThumb" aria-hidden="true"></span>
+    <button type="button" class="on" data-tab="student" role="tab" aria-selected="true">Students<span class="n" id="nStudent"></span></button>
+    <button type="button" data-tab="teacher" role="tab" aria-selected="false">Teachers<span class="n" id="nTeacher"></span></button>
+  </div>
+
+  <!-- Create -->
+  <h2 class="sec-h" id="createHead">Create a student account</h2>
+  <section class="card-pad">
+    <div id="formWrap"></div>
+    <button class="btn b-filled" type="button" id="createBtn" style="margin-top:18px">Create account</button>
+    <div id="createBanner"></div>
+  </section>
+
+  <!-- Existing -->
+  <h2 class="sec-h" id="listHead">Existing student accounts</h2>
+  <section class="card" id="listCard"></section>
+  <div id="removeBanner"></div>
+
+  <div class="demo-note">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <span>This is a demonstration. Accounts you create or remove here are not saved permanently and reset on reload.</span>
+  </div>
+
+  <p class="sec-note" style="text-align:center;padding-top:34px">Smart Education Computer Centre · Kanyapur, Asansol</p>
+</main>
+
+<script src="../portal.js"></script>
+<script>
+(function(){
+  'use strict';
+  var esc=SE.esc, banner=SE.banner;
+
+  var iniColors=['ini-blue','ini-indigo','ini-teal','ini-green','ini-orange'];
+  function initialsOf(name){
+    var p=name.trim().split(/\s+/);
+    return ((p[0]||'')[0]||'').toUpperCase()+((p[1]||'')[0]||'').toUpperCase();
+  }
+  function colorOf(name){
+    var h=0; for(var i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))>>>0;
+    return iniColors[h%iniColors.length];
+  }
+
+  var students=[
+    {id:'SE-2026-045',name:'Riya Sen',detail:'Class X · Maths & Science'},
+    {id:'SE-2026-051',name:'Aman Gupta',detail:'Python (Beginner batch)'},
+    {id:'SE-2026-060',name:'Sneha Das',detail:'NEET Preparation'},
+    {id:'SE-2026-063',name:'Rahul Roy',detail:'Java Full Stack'},
+    {id:'SE-2026-070',name:'Ishita Paul',detail:'Spoken English'}
+  ];
+  var teachers=[
+    {id:'TCH-001',name:'Priyanka Thakur',detail:'Class I–V, VI–XII English & SST',photo:'assets/teachers/priyanka-thakur.png'},
+    {id:'TCH-002',name:'Raj Bharti',detail:'Spoken English',photo:'assets/teachers/raj-bharti.png'},
+    {id:'TCH-003',name:'Rupa Konar',detail:'Bengali & Sanskrit',photo:'assets/teachers/rupa-konar.png'},
+    {id:'TCH-004',name:'Swapnanil Majumdar',detail:'Maths & Science group',photo:'assets/teachers/swapnanil-majumdar.png'},
+    {id:'TCH-005',name:'Udayan Choudhury',detail:'Java, C, C++, Python, AI',photo:'assets/teachers/udayan-choudhury.png'},
+    {id:'TCH-006',name:'Arya Pratap Singh',detail:'Java, C, C++, Python, AI',photo:'assets/teachers/arya-pratap-singh.png'},
+    {id:'TCH-007',name:'Priyasis Chakraborty',detail:'Java, C, C++, Python, AI · Science & Maths',photo:'assets/teachers/priyasis-chakraborty.png'},
+    {id:'TCH-008',name:'Arijit Chandra',detail:'Biology',photo:'assets/teachers/arijit-chandra.png'},
+    {id:'TCH-009',name:'Arko Naha',detail:'Java, C, C++, Python, AI',photo:'assets/teachers/arko-naha.png'},
+    {id:'TCH-010',name:'Moulina Panday',detail:'Java, C, C++, Python, AI',photo:'assets/teachers/moulina-panday.png'}
+  ];
+
+  var tab='student';
+
+  function nextId(list,prefix){
+    var max=0;
+    list.forEach(function(x){ var n=parseInt(x.id.split('-').pop(),10); if(n>max) max=n; });
+    var s=String(max+1); while(s.length<3) s='0'+s;
+    return prefix+s;
+  }
+
+  /* ---- Segmented control ---- */
+  var seg=document.getElementById('seg'),
+      thumb=document.getElementById('segThumb'),
+      segBtns=Array.prototype.slice.call(seg.querySelectorAll('button'));
+  function setTab(t){
+    tab=t;
+    segBtns.forEach(function(b,i){
+      var on=b.dataset.tab===t;
+      b.classList.toggle('on',on); b.setAttribute('aria-selected',on);
+      if(on) thumb.style.transform='translateX('+(i*100)+'%)';
+    });
+    document.getElementById('createHead').textContent = t==='student' ? 'Create a student account' : 'Create a teacher account';
+    document.getElementById('listHead').textContent = t==='student' ? 'Existing student accounts' : 'Existing teacher accounts';
+    document.getElementById('createBanner').innerHTML='';
+    document.getElementById('removeBanner').innerHTML='';
+    renderForm(); renderList();
+  }
+  segBtns.forEach(function(b){ b.addEventListener('click',function(){ setTab(b.dataset.tab); }); });
+
+  /* ---- Create form ---- */
+  function renderForm(){
+    var wrap=document.getElementById('formWrap');
+    if(tab==='student'){
+      wrap.innerHTML=
+        '<label style="display:block;margin-bottom:14px"><span class="f-label">Student’s full name</span><input class="field" id="fName" type="text" placeholder="e.g. Ananya Bose" autocomplete="off"></label>'+
+        '<div class="f-grid f-2">'+
+          '<label><span class="f-label">Class or course</span><input class="field" id="fDetail" type="text" placeholder="e.g. Class IX · Science"></label>'+
+          '<label><span class="f-label">Guardian’s phone number</span><input class="field" id="fPhone" type="tel" placeholder="98300 00000"></label>'+
+        '</div>';
+    }else{
+      wrap.innerHTML=
+        '<label style="display:block;margin-bottom:14px"><span class="f-label">Teacher’s full name</span><input class="field" id="fName" type="text" placeholder="e.g. Debjani Roy" autocomplete="off"></label>'+
+        '<div class="f-grid f-2">'+
+          '<label><span class="f-label">Qualification</span><input class="field" id="fDetailQ" type="text" placeholder="e.g. M.Sc., B.Ed."></label>'+
+          '<label><span class="f-label">Subjects taught</span><input class="field" id="fDetail" type="text" placeholder="e.g. Physics &amp; Chemistry"></label>'+
+        '</div>';
+    }
+  }
+
+  document.getElementById('createBtn').addEventListener('click',function(){
+    var name=(document.getElementById('fName').value||'').trim();
+    if(!name){ banner('createBanner','red','Please type the full name first.'); return; }
+    if(tab==='student'){
+      var id=nextId(students,'SE-2026-');
+      var detail=(document.getElementById('fDetail').value||'').trim()||'Class to be assigned';
+      students.unshift({id:id,name:name,detail:detail});
+      banner('createBanner','green','Account created. Student ID '+id+'. Print the slip with the ID and password, and hand it to the guardian.');
+    }else{
+      var tid=nextId(teachers,'TCH-');
+      var q=(document.getElementById('fDetailQ').value||'').trim();
+      var subj=(document.getElementById('fDetail').value||'').trim()||'Subjects to be assigned';
+      teachers.unshift({id:tid,name:name,detail:(q?q+' · ':'')+subj});
+      banner('createBanner','green','Teacher account created. Teacher ID '+tid+'. Give the login slip to the teacher.');
+    }
+    renderForm(); renderList();
+  });
+
+  /* ---- Existing list + delete ---- */
+  function updateCounts(){
+    document.getElementById('nStudent').textContent=students.length;
+    document.getElementById('nTeacher').textContent=teachers.length;
+  }
+
+  function renderList(){
+    var host=document.getElementById('listCard');
+    var list = tab==='student' ? students : teachers;
+    updateCounts();
+    if(!list.length){
+      host.innerHTML='<div class="row"><div class="row-main" style="text-align:center;padding:16px 0">'+
+        '<p class="row-title">No '+tab+' accounts</p><p class="row-sub">Create one above and it will appear here.</p></div></div>';
+      return;
+    }
+    host.innerHTML=list.map(function(x,i){
+      var avatar = x.photo
+        ? '<img class="ava acct-ava" src="'+x.photo+'" alt="'+esc(x.name)+'" loading="lazy">'
+        : '<span class="ini '+colorOf(x.name)+'">'+esc(initialsOf(x.name))+'</span>';
+      return '<div class="row inset-ava">'+avatar+
+        '<div class="row-main"><p class="row-title">'+esc(x.name)+'</p>'+
+        '<p class="row-sub">'+esc(x.id)+' · '+esc(x.detail)+'</p></div>'+
+        '<button type="button" class="btn b-red-tinted b-xs del-btn" data-i="'+i+'">Delete</button></div>';
+    }).join('');
+    host.querySelectorAll('.del-btn').forEach(function(b){
+      b.addEventListener('click',function(){ askConfirm(b); });
+    });
+  }
+
+  function askConfirm(btn){
+    var row=btn.parentNode;
+    var i=+btn.dataset.i;
+    var wrap=document.createElement('span');
+    wrap.className='confirm';
+    wrap.innerHTML='<span class="q">Remove?</span>'+
+      '<button type="button" class="btn b-red-tinted b-xs yes">Remove</button>'+
+      '<button type="button" class="btn b-gray b-xs no">Cancel</button>';
+    row.replaceChild(wrap,btn);
+    wrap.querySelector('.no').addEventListener('click',function(){ renderList(); });
+    wrap.querySelector('.yes').addEventListener('click',function(){
+      var list = tab==='student' ? students : teachers;
+      var removed=list.splice(i,1)[0];
+      renderList();
+      banner('removeBanner','green','Removed '+removed.name+' ('+removed.id+'). The login no longer works.');
+    });
+  }
+
+  /* ---- Init from ?new= ---- */
+  var q=(new URLSearchParams(location.search).get('new')||'').toLowerCase();
+  setTab(q==='teacher'?'teacher':'student');
+  if(q==='student'||q==='teacher'){
+    var f=document.getElementById('fName'); if(f) f.focus();
+  }
+})();
+</script>
+</body>
+</html>

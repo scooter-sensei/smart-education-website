@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page not found · Smart Education</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/logo.jpeg">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=zodiak@400,500,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#FAF7F1;--paper:#FFFFFF;--ink:#221E15;--ink-2:#4A4436;--muted:#6E6754;
+  --green:#20503C;--brick:#A93B2A;--gold:#B98A31;--gold-bright:#D9B461;
+  --line:rgba(34,30,21,.10);--line-soft:rgba(34,30,21,.06);
+  --serif:'Zodiak',Georgia,'Times New Roman',serif;
+  --sans:'General Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --ease-out:cubic-bezier(.23,1,.32,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100dvh;background:var(--cream);color:var(--ink);
+  font-family:var(--sans);font-size:16.5px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  display:flex;flex-direction:column;padding:20px;
+}
+::selection{background:var(--gold-bright);color:var(--ink)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:8px}
+.grain{
+  position:fixed;inset:0;z-index:80;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+.top{max-width:1140px;width:100%;margin:0 auto}
+.brand{display:inline-flex;align-items:center;gap:11px;text-decoration:none;color:var(--ink)}
+.brand img{width:42px;height:42px;object-fit:contain;background:#fff;border-radius:12px;border:1px solid var(--line-soft);padding:4px}
+.brand b{font-family:var(--serif);font-weight:700;font-size:18.5px}
+.stage{
+  flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  max-width:1140px;width:100%;margin:0 auto;padding:48px 0;
+}
+h1{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(2.6rem,6vw,4.5rem);line-height:1.06;letter-spacing:-.02em;
+  text-wrap:balance;max-width:16ch;
+}
+h1 em{position:relative;font-style:normal;color:var(--green)}
+h1 em::after{
+  content:'';position:absolute;left:-.06em;right:-.06em;bottom:-.19em;height:.3em;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 20' preserveAspectRatio='none'%3E%3Cpath d='M3 12 C 58 4, 112 17, 168 10 S 262 7, 297 13' fill='none' stroke='%23B98A31' stroke-width='3.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat left center;
+  background-size:100% 100%;pointer-events:none;
+}
+.stage p{color:var(--muted);font-size:17px;max-width:46ch;margin:22px 0 34px;line-height:1.75}
+.ctas{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.btn{
+  display:inline-flex;align-items:center;gap:14px;text-decoration:none;cursor:pointer;
+  border:none;border-radius:999px;padding:9px 9px 9px 28px;min-height:58px;
+  font-family:var(--sans);font-size:15.5px;font-weight:600;
+  transition:transform .22s var(--ease-out),background .3s var(--ease-out);
+}
+.btn:active{transform:scale(.97)}
+.btn-ink{background:var(--ink);color:var(--cream)}
+.btn-ink .orb{background:rgba(250,247,241,.14)}
+.btn-ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.btn-ghost .orb{background:rgba(34,30,21,.06)}
+.orb{
+  width:40px;height:40px;border-radius:50%;flex:none;
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:transform .32s var(--ease-out);
+}
+@media (hover:hover) and (pointer:fine){
+  .btn-ink:hover{background:#000}
+  .btn-ghost:hover{background:rgba(34,30,21,.05)}
+  .btn:hover .orb{transform:translate(3px,-2px) scale(1.06)}
+}
+.call{margin-top:30px;font-size:14.5px;color:var(--muted)}
+.call a{color:var(--brick);font-weight:600;text-decoration:none}
+.foot{max-width:1140px;width:100%;margin:0 auto;font-size:12.5px;color:var(--muted);padding-bottom:6px}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms !important}
+}
+</style>
+<script defer src="translate.js"></script>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<div class="top">
+  <a class="brand" href="index.html"><img src="assets/logo.jpeg" alt="Smart Education logo"><b>Smart Education</b></a>
+</div>
+
+<main class="stage">
+  <h1>That page is <em>not found.</em></h1>
+  <p>It may have moved, or the address was mistyped. Everything lives on the home page: programmes, faculty, results, news, and how to reach us.</p>
+  <div class="ctas">
+    <a class="btn btn-ink" href="index.html">Back to the home page
+      <span class="orb"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
+    <a class="btn btn-ghost" href="app/login.html">Staff sign-in
+      <span class="orb"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></span>
+    </a>
+  </div>
+  <p class="call">Or call the office: <a href="tel:+919382938916">+91 93829 38916</a></p>
+</main>
+
+<p class="foot">© 2026 Smart Education · Kanyapur, Asansol</p>
+</body>
+</html>

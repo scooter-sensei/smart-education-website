@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.SUPER_ADMIN);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/shell.js"></script>
+<style>
+/* ===================== Playful bento dashboard ===================== */
+.bento-page{
+  --display:'Clash Display','General Sans',var(--font);
+  --sans:'General Sans',var(--font);
+  --lime:#C6F24E; --lime-2:#B4E82E; --lime-ink:#16240a; --bar-past:#A9C15E;
+  --ink:#161a12; --on-ink:#F3F6EE; --on-ink-dim:rgba(243,246,238,.6);
+  --surf:var(--card); --edge:var(--separator);
+  --spring:cubic-bezier(.34,1.3,.5,1);
+  max-width:1140px; font-family:var(--sans);
+}
+.bento-page *{font-family:inherit}
+/* dark: lift the card surface off the pure-black canvas so cards read as separate
+   (their drop-shadows disappear on black) */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bento-page{--surf:#20231c;--edge:rgba(198,242,78,.09);--ink:#12150e}
+  :root:not([data-theme="light"]) body.has-shell{background:#0c0e0a}}   /* warm off-black, never pure #000 */
+:root[data-theme="dark"] .bento-page{--surf:#20231c;--edge:rgba(198,242,78,.09);--ink:#12150e}
+:root[data-theme="dark"] body.has-shell{background:#0c0e0a}
+
+/* reveal */
+@keyframes b-in{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+.rv{opacity:0;animation:b-in .6s var(--spring) forwards;animation-delay:var(--d,0s)}
+@media (prefers-reduced-motion:reduce){.rv{opacity:1;animation:none} .ring-arc,.bar-fill,.mini-fill{transition:none!important}}
+
+/* header line */
+.bento-hi{padding:2px 4px 0}
+.bento-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.03em;
+  text-transform:uppercase;color:var(--secondary)}
+.bento-eyebrow .ld{width:7px;height:7px;border-radius:50%;background:var(--lime-2);box-shadow:0 0 0 4px rgba(180,232,46,.22);
+  animation:b-ping 2.6s var(--ease-out) infinite}
+@keyframes b-ping{0%,72%,100%{box-shadow:0 0 0 4px rgba(180,232,46,.22)}82%{box-shadow:0 0 0 8px rgba(180,232,46,.02)}}
+@media (prefers-reduced-motion:reduce){.bento-eyebrow .ld{animation:none}}
+
+/* grid */
+.bento{display:grid;gap:17px;margin-top:18px;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-auto-rows:minmax(94px,auto);
+  grid-template-areas:
+    "greet greet ring atten"
+    "trend trend ring cta"
+    "glance glance glance cta"
+    "attn  attn  attn  attn";}
+@media (max-width:900px){.bento{grid-template-columns:1fr 1fr;
+  grid-template-areas:
+    "greet greet" "ring ring" "atten cta" "trend trend"
+    "glance glance" "attn attn";}}
+@media (max-width:560px){.bento{grid-template-columns:1fr;grid-template-areas:none}
+  .bento>*{grid-area:auto!important}}
+
+/* card base */
+.bcard{background:var(--surf);border:1px solid var(--edge);border-radius:24px;padding:22px 23px;position:relative;overflow:hidden;
+  box-shadow:0 1px 2px rgba(0,0,0,.04),0 18px 40px -30px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05);
+  transition:transform .3s var(--spring),box-shadow .3s var(--ease-out)}
+@media (hover:hover) and (pointer:fine){.bcard:hover{transform:translateY(-3px);box-shadow:0 1px 2px rgba(0,0,0,.05),0 26px 50px -28px rgba(0,0,0,.55)}}
+a.bcard{text-decoration:none;color:inherit;display:block}
+.card-ink{background:var(--ink);border-color:var(--ink);color:var(--on-ink)}
+/* lime feature card: a punchy lime block in light; a dark card with lime accents
+   in dark (a full-lime card glares against the dark canvas) */
+.card-lime{background:var(--lime);border-color:var(--lime);color:var(--lime-ink);
+  --cl-fig:var(--lime-ink);--cl-btn-bg:var(--lime-ink);--cl-btn-fg:var(--lime);--cl-div:rgba(22,36,10,.18);--cl-doodle:.55}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bento-page .card-lime{
+  background:#1a220f;border-color:rgba(198,242,78,.22);color:#e0efc6;
+  --cl-fig:var(--lime);--cl-btn-bg:var(--lime);--cl-btn-fg:var(--lime-ink);--cl-div:rgba(198,242,78,.15);--cl-doodle:.7}}
+:root[data-theme="dark"] .bento-page .card-lime{
+  background:#1a220f;border-color:rgba(198,242,78,.22);color:#e0efc6;
+  --cl-fig:var(--lime);--cl-btn-bg:var(--lime);--cl-btn-fg:var(--lime-ink);--cl-div:rgba(198,242,78,.15);--cl-doodle:.7}
+.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:13.5px;font-weight:600}
+.card-h .muted{color:var(--secondary);font-weight:500;font-size:12.5px}
+
+/* greeting */
+.greet{grid-area:greet;display:flex;flex-direction:column;justify-content:center;gap:9px}
+.hello{font-family:var(--display);font-weight:600;font-size:clamp(27px,3.7vw,42px);line-height:1.02;letter-spacing:-.02em;color:var(--label)}
+.hello mark{background:var(--lime);color:var(--lime-ink);padding:.02em .22em;border-radius:9px;
+  -webkit-box-decoration-break:clone;box-decoration-break:clone}
+.hello-sub{font-size:14.5px;color:var(--secondary);line-height:1.45;max-width:48ch}
+.gchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.gchip{font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:999px;background:var(--fill);color:var(--label)}
+.gchip.hot{background:var(--lime);color:var(--lime-ink)}
+
+/* ring card */
+.ring-card{grid-area:ring;display:flex;flex-direction:column}
+.ring-card .rc-top{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;color:var(--on-ink)}
+.tag{font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:4px 9px;border-radius:999px;background:var(--lime);color:var(--lime-ink)}
+.ring-wrap{position:relative;flex:1;display:grid;place-items:center;margin:8px 0 2px;min-height:150px}
+.ring{width:172px;height:172px;transform:rotate(-90deg)}
+.ring-track{stroke:rgba(243,246,238,.13)}
+.ring-arc{stroke:var(--lime);transition:stroke-dashoffset 1.1s var(--ease-out)}
+.ring-center{position:absolute;inset:0;display:grid;place-content:center;text-align:center;line-height:1}
+.ring-center b{font-family:var(--display);font-weight:600;font-size:42px;color:var(--on-ink);letter-spacing:-.02em}
+.ring-center span{display:block;font-size:12px;color:var(--on-ink-dim);margin-top:5px}
+.ring-foot{font-size:13.5px;color:var(--on-ink-dim);text-align:center;margin-top:auto}
+.ring-foot b{color:var(--on-ink);font-weight:650;font-family:var(--display)}
+.ring-card::before{content:"";position:absolute;top:-28%;right:-20%;width:210px;height:210px;border-radius:50%;
+  background:radial-gradient(circle,rgba(198,242,78,.16),transparent 70%);pointer-events:none;z-index:0}
+.ring-card>*{position:relative;z-index:1}
+
+/* attendance mini */
+.atten{grid-area:atten;display:flex;flex-direction:column;justify-content:center;gap:10px}
+.atten .att-num{font-family:var(--display);font-weight:600;font-size:34px;letter-spacing:-.02em;color:var(--label);line-height:1}
+.atten .att-lab{font-size:13px;color:var(--secondary)}
+.mini-track{height:9px;border-radius:999px;background:var(--fill);overflow:hidden}
+.mini-fill{display:block;height:100%;width:100%;border-radius:999px;transform:scaleX(0);transform-origin:left;
+  background:var(--lime-2);transition:transform .9s var(--ease-out)}
+
+/* trend bars */
+.trend{grid-area:trend;display:flex;flex-direction:column;gap:10px}
+.bars{display:flex;align-items:flex-end;gap:16px;flex:1;min-height:118px;padding-top:6px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end}
+.bar-val{font-family:var(--display);font-weight:600;font-size:15px;color:var(--label);letter-spacing:-.01em}
+.bar-track{position:relative;width:100%;max-width:64px;flex:1;border-radius:13px 13px 8px 8px;overflow:hidden;background:var(--fill)}
+.bar-fill{position:absolute;inset:0;transform:scaleY(0);transform-origin:bottom;border-radius:13px 13px 8px 8px;
+  background:var(--bar-past);transition:transform .85s var(--ease-out)}
+.bar.now .bar-fill{background:linear-gradient(180deg,var(--lime),var(--lime-2))}
+.bar.now .bar-val{color:var(--lime-2)}
+.bar-lab{font-size:12px;font-weight:600;color:var(--secondary)}
+
+/* dues lime CTA */
+a.cta{grid-area:cta;display:flex;flex-direction:column}
+.cta .cta-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;font-size:13.5px;font-weight:600}
+.cta .doodle{opacity:var(--cl-doodle,.55);flex:none}
+.cta .cta-fig{font-family:var(--display);font-weight:700;font-size:clamp(34px,4.4vw,46px);letter-spacing:-.03em;line-height:1;margin:14px 0 0;color:var(--cl-fig,inherit)}
+.cta .cta-sub{font-size:13.5px;font-weight:500;margin-top:7px;opacity:.85}
+.cta-list{list-style:none;margin:15px 0 0;display:flex;flex-direction:column}
+.cta-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13.5px;font-weight:500;padding:8px 0;border-top:1px solid var(--cl-div,rgba(22,36,10,.16))}
+.cta-list li b{font-weight:650;font-variant-numeric:tabular-nums}
+.cta .cta-btn{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;margin-top:auto;
+  background:var(--cl-btn-bg,var(--lime-ink));color:var(--cl-btn-fg,var(--lime));font-size:13.5px;font-weight:650;padding:10px 15px;border-radius:12px;
+  transition:transform .18s var(--ease-out)}
+@media (hover:hover) and (pointer:fine){a.cta:hover .cta-btn{transform:translateX(3px)}}
+
+/* at-a-glance: three stats grouped in one card, hairline-divided (not 3 boxes) */
+.glance{grid-area:glance;display:flex;align-items:center}
+.glance-row{display:flex;width:100%}
+.gstat{flex:1;display:flex;align-items:center;gap:13px;padding:2px 10px;min-width:0}
+.gstat + .gstat{border-left:1px solid var(--edge)}
+.g-ic{width:38px;height:38px;flex:none;border-radius:12px;display:grid;place-items:center;background:var(--fill);color:var(--secondary)}
+.g-ic.lime{background:var(--lime);color:var(--lime-ink)}
+.g-ic svg{width:20px;height:20px}
+.g-num{font-family:var(--display);font-weight:600;font-size:31px;letter-spacing:-.02em;line-height:1;color:var(--label)}
+.g-lab{font-size:12.5px;color:var(--secondary);margin-top:3px;display:block}
+@media (max-width:560px){.glance-row{flex-direction:column;gap:15px}.gstat + .gstat{border-left:none;border-top:1px solid var(--edge);padding-top:15px}}
+
+/* needs attention */
+.attn{grid-area:attn}
+.pill-lime{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--lime);color:var(--lime-ink)}
+.attn-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px 22px;margin-top:14px}
+@media (max-width:620px){.attn-cols{grid-template-columns:1fr}}
+.attn-col h4{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--secondary);margin-bottom:9px}
+.trow{display:flex;align-items:center;gap:11px;padding:9px 0}
+.trow + .trow{border-top:1px solid var(--separator)}
+.trow .tav{width:34px;height:34px;flex:none;border-radius:11px;display:grid;place-items:center;background:var(--lime);color:var(--lime-ink);font-weight:700;font-size:12.5px}
+.trow .tinfo{flex:1;min-width:0}
+.trow .tinfo b{font-size:14px;font-weight:600;display:block;line-height:1.25}
+.trow .tinfo span{font-size:12px;color:var(--secondary)}
+.trow .tacts{display:flex;gap:6px;flex:none}
+.tbtn{border:none;cursor:pointer;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;transition:transform .18s var(--spring)}
+.tbtn:active{transform:scale(.9)}
+.tbtn svg{width:16px;height:16px}
+.tbtn.ok{background:var(--lime);color:var(--lime-ink)}
+.tbtn.no{background:var(--fill);color:var(--secondary)}
+a.bcard:active{transform:scale(.99)}
+@media (hover:hover) and (pointer:fine){.tbtn.ok:hover{filter:brightness(1.06)}.tbtn.no:hover{background:var(--fill-2);color:var(--label)}}
+.attn-empty{font-size:13px;color:var(--secondary);padding:8px 0}
+.attn-skel{height:52px;border-radius:12px;background:var(--fill);margin:8px 0;animation:se-shimmer 1.3s linear infinite;background-image:linear-gradient(90deg,var(--fill) 0%,var(--fill-2) 50%,var(--fill) 100%);background-size:200% 100%}
+</style>
+</head>
+<body>
+<main class="app-main bento-page">
+  <div class="bento-hi rv" style="--d:.02s">
+    <p class="bento-eyebrow"><i class="ld"></i> <span id="dateLine">—</span></p>
+  </div>
+
+  <div class="bento">
+    <section class="bcard greet rv" style="--d:.05s">
+      <h1 class="hello" id="greet">Good evening, <mark>Santana</mark></h1>
+      <p class="hello-sub" id="statusLine">Loading your centre…</p>
+      <div class="gchips" id="gchips"></div>
+    </section>
+
+    <section class="bcard card-ink ring-card rv" style="--d:.1s">
+      <div class="rc-top"><span id="cycName">This cycle</span><span class="tag" id="cycTag">OPEN</span></div>
+      <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="ring-track" cx="60" cy="60" r="50" fill="none" stroke-width="15"/>
+          <circle class="ring-arc" id="ringArc" cx="60" cy="60" r="50" fill="none" stroke-width="15" stroke-linecap="round" stroke-dasharray="314.16" stroke-dashoffset="314.16"/>
+        </svg>
+        <div class="ring-center"><b id="rateNum">0%</b><span>collected</span></div>
+      </div>
+      <p class="ring-foot"><b id="collectedFig">₹0</b> of <span id="billedFig">₹0</span></p>
+    </section>
+
+    <section class="bcard atten rv" style="--d:.14s">
+      <div class="card-h"><span>Attendance</span><span class="muted">this month</span></div>
+      <p class="att-num" id="attnNum">0%</p>
+      <div class="mini-track"><span class="mini-fill" id="attnBar"></span></div>
+    </section>
+
+    <section class="bcard trend rv" style="--d:.12s">
+      <div class="card-h"><span>Collections</span><span class="muted">last 3 cycles</span></div>
+      <div class="bars" id="bars"></div>
+    </section>
+
+    <a class="bcard card-lime cta rv" style="--d:.16s" href="dues.html">
+      <div class="cta-h"><span>Outstanding dues</span>
+        <svg class="doodle" width="46" height="30" viewBox="0 0 46 30" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="16" cy="8" rx="12" ry="5"/><path d="M4 8v6c0 2.8 5.4 5 12 5s12-2.2 12-5V8"/><path d="M4 14v6c0 2.8 5.4 5 12 5s12-2.2 12-5v-6"/><circle cx="37" cy="17" r="8"/><path d="M34 14h6M34 17h6M36 14c2 0 3 1 3 2s-1 2-3 2h-1l4 3" stroke-width="1.3"/></svg>
+      </div>
+      <b class="cta-fig" id="duesFig">₹0</b>
+      <p class="cta-sub" id="duesSub">no dues outstanding</p>
+      <ul class="cta-list" id="duesList"></ul>
+      <span class="cta-btn">Collect now →</span>
+    </a>
+
+    <section class="bcard glance rv" style="--d:.18s" aria-label="At a glance">
+      <div class="glance-row">
+        <div class="gstat"><span class="g-ic lime"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg></span><div><b class="g-num" id="sStud">0</b><span class="g-lab">Active students</span></div></div>
+        <div class="gstat"><span class="g-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87"/></svg></span><div><b class="g-num" id="sTeach">0</b><span class="g-lab">Active teachers</span></div></div>
+        <div class="gstat"><span class="g-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M11 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0M15 11l2 2 4-4"/></svg></span><div><b class="g-num" id="sEnroll">0</b><span class="g-lab">Active enrolments</span></div></div>
+      </div>
+    </section>
+
+    <section class="bcard attn rv" style="--d:.24s">
+      <div class="card-h"><span>Needs your eye</span><span class="pill-lime" id="attnCount">0</span></div>
+      <div class="attn-cols">
+        <div class="attn-col"><h4>New sign-ups</h4><div id="regBody"></div></div>
+        <div class="attn-col"><h4>Enrolment requests</h4><div id="enrBody"></div></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('admin/dashboard.html');
+  var esc=SE.esc, $=function(id){return document.getElementById(id);};
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function money(n){ return '₹'+Number(n||0).toLocaleString('en-IN'); }
+  function kf(n){ var k=n/1000; return '₹'+(k>=10?Math.round(k):k.toFixed(1).replace(/\.0$/,''))+'k'; }
+  function initials(s){ return String(s||'?').trim().split(/\s+/).map(function(w){return w.charAt(0);}).slice(0,2).join('').toUpperCase(); }
+
+  /* robust number animation — correct value even if rAF is throttled */
+  function animNum(el,target,fmt){ var fin=fmt(target);
+    if(reduce||document.hidden){ el.textContent=fin; return; }
+    var start=performance.now(),dur=780,done=false;
+    (function t(n){ if(done)return; var p=Math.min(1,(n-start)/dur),e=1-Math.pow(1-p,3); el.textContent=fmt(Math.round(target*e)); if(p<1)requestAnimationFrame(t); else done=true; })(performance.now());
+    setTimeout(function(){ done=true; el.textContent=fin; },dur+160);
+  }
+  function setScale(el,tf){ if(reduce||document.hidden){ el.style.transition='none'; } else { void el.offsetWidth; } el.style.transform=tf; }
+  function setRing(el,pct){ var off=314.16*(1-pct/100); if(reduce||document.hidden){ el.style.transition='none'; } else { void el.getBoundingClientRect(); } el.style.strokeDashoffset=off; }
+  setTimeout(function(){ [].forEach.call(document.querySelectorAll('.rv'),function(el){ el.style.opacity='1'; }); },1100);
+
+  var now=new Date(), h=now.getHours(), part=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+  var u=SE.auth.user()||{name:'there'};
+  $('greet').innerHTML=esc(part)+', <mark>'+esc(u.name.split(' ')[0])+'</mark>';
+  $('dateLine').textContent=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  Promise.all([SE.api.reports.overview(), SE.api.dashboard.adminKpis()]).then(function(res){
+    var o=res[0], k=res[1];
+
+    var awaiting=k.pendingRequests+k.pendingEnrollments;
+    $('statusLine').textContent = awaiting
+      ? 'You’ve got '+awaiting+' thing'+(awaiting===1?'':'s')+' to look at, and '+money(o.kpis.dueTotal)+' still to collect this month.'
+      : 'All caught up — nothing waiting on you right now.';
+    $('gchips').innerHTML =
+      (k.pendingRequests?'<span class="gchip hot">'+k.pendingRequests+' sign-up'+(k.pendingRequests===1?'':'s')+'</span>':'')+
+      (k.pendingEnrollments?'<span class="gchip hot">'+k.pendingEnrollments+' enrolment'+(k.pendingEnrollments===1?'':'s')+'</span>':'')+
+      '<span class="gchip">'+k.activeStudents+' students</span>';
+
+    /* ring — this cycle */
+    $('cycName').textContent=k.currentCycle;
+    var rate=k.billed?Math.round(k.collected/k.billed*100):0;
+    animNum($('rateNum'),rate,function(v){return v+'%';});
+    $('billedFig').textContent=money(k.billed);
+    animNum($('collectedFig'),k.collected,money);
+    setRing($('ringArc'),rate);
+
+    /* attendance */
+    animNum($('attnNum'),k.attendanceRate,function(v){return v+'%';});
+    setScale($('attnBar'),'scaleX('+(k.attendanceRate/100)+')');
+
+    /* trend bars (oldest -> newest) */
+    var cyc=o.cycles.slice().sort(function(a,b){return a.month<b.month?-1:1;});
+    var maxB=Math.max.apply(null,cyc.map(function(c){return c.billed||1;}));
+    $('bars').innerHTML=cyc.map(function(c){
+      var pct=Math.round((c.collected/maxB)*100), mon;
+      try{ mon=new Date(c.month+'-01T00:00:00').toLocaleDateString('en-GB',{month:'short'}); }catch(e){ mon=c.month; }
+      return '<div class="bar'+(c.status==='OPEN'?' now':'')+'"><b class="bar-val">'+kf(c.collected)+'</b>'+
+        '<div class="bar-track"><span class="bar-fill" data-h="'+pct+'"></span></div><span class="bar-lab">'+esc(mon)+'</span></div>';
+    }).join('');
+    [].forEach.call(document.querySelectorAll('.bar-fill'),function(f){ setScale(f,'scaleY('+(+f.getAttribute('data-h')/100)+')'); });
+
+    /* dues CTA */
+    animNum($('duesFig'),o.kpis.dueTotal,money);
+    $('duesSub').textContent=(k.dues?k.dues+' student'+(k.dues===1?'':'s')+' owe you':'no dues outstanding');
+    $('duesList').innerHTML=(o.topDebtors||[]).slice(0,3).map(function(d){
+      return '<li><span>'+esc(d.student)+'</span><b>'+money(d.total)+'</b></li>'; }).join('');
+
+    /* stats */
+    animNum($('sStud'),k.activeStudents,String);
+    animNum($('sTeach'),k.activeTeachers,String);
+    animNum($('sEnroll'),k.activeEnrollments,String);
+  }).catch(function(){ $('statusLine').textContent='Couldn’t load the summary — check your connection and reload.'; });
+
+  /* ---- needs attention: task-style approve/reject ---- */
+  var TICK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+  var CROSS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+
+  function mountAttn(cfg){
+    var body=$(cfg.body);
+    function tally(){ var n=document.querySelectorAll('#regBody .trow').length+document.querySelectorAll('#enrBody .trow').length; $('attnCount').textContent=n; }
+    function render(items){
+      if(!items.length){ body.innerHTML='<p class="attn-empty">'+cfg.empty+'</p>'; return; }
+      body.innerHTML=items.map(function(r){
+        return '<div class="trow" data-id="'+r.id+'"><span class="tav">'+esc(initials(cfg.name(r)))+'</span>'+
+          '<span class="tinfo"><b>'+esc(cfg.name(r))+'</b><span>'+esc(cfg.sub(r))+'</span></span>'+
+          '<span class="tacts"><button class="tbtn ok" data-act="approve" title="Approve">'+TICK+'</button>'+
+          '<button class="tbtn no" data-act="reject" title="Reject">'+CROSS+'</button></span></div>';
+      }).join('');
+    }
+    body.innerHTML='<div class="attn-skel"></div>';
+    cfg.fetch().then(function(items){ render(items); tally(); }).catch(function(){ body.innerHTML='<p class="attn-empty">Couldn’t load.</p>'; });
+    body.addEventListener('click',function(e){
+      var btn=e.target.closest('[data-act]'); if(!btn) return;
+      var row=btn.closest('.trow'), id=row.getAttribute('data-id'), act=btn.getAttribute('data-act');
+      var name=row.querySelector('.tinfo b').textContent;
+      row.querySelectorAll('button').forEach(function(b){ b.disabled=true; });
+      (act==='approve'?cfg.approve:cfg.reject)(id).then(function(){
+        row.style.transition='opacity .2s,transform .2s'; row.style.opacity='0'; row.style.transform='translateX(12px)';
+        setTimeout(function(){ row.remove(); if(!body.querySelector('.trow')) body.innerHTML='<p class="attn-empty">'+cfg.empty+'</p>'; tally(); },200);
+        SE.shell.toast(cfg.ok(name,act));
+      }).catch(function(){ row.querySelectorAll('button').forEach(function(b){ b.disabled=false; }); SE.shell.toast('That didn’t go through — try again.'); });
+    });
+  }
+
+  mountAttn({
+    body:'regBody', empty:'No new sign-ups waiting.',
+    fetch:function(){ return SE.api.registrationRequests.list({status:'PENDING'}); },
+    approve:function(id){ return SE.api.registrationRequests.approve(id); },
+    reject:function(id){ return SE.api.registrationRequests.reject(id); },
+    name:function(r){ return r.full_name; }, sub:function(r){ return r.klass+' · by '+r.requested_by; },
+    ok:function(n,a){ return a==='approve'?n+' now has a student ID.':n+'’s request was rejected.'; }
+  });
+  mountAttn({
+    body:'enrBody', empty:'No enrolment requests waiting.',
+    fetch:function(){ return SE.api.enrollments.pending(); },
+    approve:function(id){ return SE.api.enrollments.approve(id); },
+    reject:function(id){ return SE.api.enrollments.reject(id); },
+    name:function(r){ return r.student; }, sub:function(r){ return r.subject+' · '+r.teacher; },
+    ok:function(n,a){ return a==='approve'?'Enrolment activated for '+n+'.':'Request for '+n+' rejected.'; }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Subjects · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.SUPER_ADMIN);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Subjects</h1>
+    <p>The reusable subject master. A subject can be taught by several teachers and priced per class. Deactivate a subject rather than deleting it — historical references stay valid.</p>
+  </div>
+
+  <section class="card-pad create-card">
+    <h2 class="card-h">New subject</h2>
+    <p class="card-hint">A short code (like <span class="lcode">MATH</span>) and a display name.</p>
+    <form id="createForm" novalidate>
+      <div class="f-grid" style="grid-template-columns:.7fr 1.4fr">
+        <label class="fld2"><span class="f-label">Code</span><input class="field" name="code" type="text" placeholder="e.g. CHEM" autocapitalize="characters" autocomplete="off" spellcheck="false"><span class="fe" data-err="code"></span></label>
+        <label class="fld2"><span class="f-label">Subject name</span><input class="field" name="name" type="text" placeholder="e.g. Chemistry" autocomplete="off"><span class="fe" data-err="name"></span></label>
+      </div>
+      <div class="form-actions"><button class="btn b-filled" type="submit" id="createBtn">Add subject</button></div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>All subjects</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('admin/subjects.html');
+  var esc=SE.esc, form=document.getElementById('createForm');
+  function activePill(a){ return a?'<span class="pill pill-green">Active</span>':'<span class="pill pill-gray">Inactive</span>'; }
+  function actionBtn(a){ return a?'<button class="btn b-red-tinted b-xs" type="button" data-act="deactivate">Deactivate</button>':'<button class="btn b-tinted b-xs" type="button" data-act="reactivate">Reactivate</button>'; }
+
+  var panel=SE.ui.listPanel({
+    mount:'listBody', count:'listCount',
+    fetch:function(){ return SE.api.subjects.list(); },
+    empty:{title:'No subjects yet', sub:'Add your first subject above.', icon:'box'},
+    row:function(s){
+      return '<div class="row" data-id="'+s.id+'"><div class="row-main">'+
+        '<p class="row-title">'+esc(s.name)+'</p><p class="row-sub"><span class="lcode">'+esc(s.code)+'</span></p></div>'+
+        '<div class="row-acts">'+activePill(s.is_active)+actionBtn(s.is_active)+'</div></div>';
+    },
+    onAction:function(id,act,rowEl){
+      var willActive=(act==='reactivate');
+      function apply(){
+        SE.api.subjects.setActive(id,willActive).then(function(){
+          var p=rowEl.querySelector('.pill'); if(p) p.outerHTML=activePill(willActive);
+          var b=rowEl.querySelector('[data-act]'); if(b) b.outerHTML=actionBtn(willActive);
+          SE.shell.toast('Subject '+(willActive?'reactivated.':'deactivated.'));
+        }).catch(function(){ SE.shell.toast('Couldn’t update — try again.'); });
+      }
+      if(willActive) apply();
+      else SE.ui.confirm({title:'Deactivate this subject?',body:'It can’t be used for new teacher assignments or enrollments. Existing enrollments and history are unaffected.',confirmLabel:'Deactivate',tone:'danger'}).then(function(ok){ if(ok)apply(); });
+    }
+  });
+
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    SE.ui.clearErrors(form);
+    var ok=SE.ui.validate(form,{
+      code:function(v){ if(!v)return 'Enter a subject code.'; if(!/^[A-Za-z0-9]{2,10}$/.test(v))return 'Use 2–10 letters or digits, no spaces.'; return null; },
+      name:function(v){ return v?null:'Enter a subject name.'; }
+    });
+    if(!ok)return;
+    var btn=document.getElementById('createBtn'); btn.disabled=true;
+    SE.api.subjects.create({code:form.elements.code.value.trim(),name:form.elements.name.value.trim()})
+      .then(function(){ form.reset(); btn.disabled=false; panel.reload(); SE.shell.toast('Subject added.'); })
+      .catch(function(err){ btn.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t add the subject.'); });
+  });
+})();
+</script>
+</body>
+</html>

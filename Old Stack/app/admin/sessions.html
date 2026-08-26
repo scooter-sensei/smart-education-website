@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Academic Sessions · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.SUPER_ADMIN);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>Academic Sessions</h1>
+    <p>Only one session is active at a time. Create a period, then activate it when it begins. Closed sessions keep all their history.</p>
+  </div>
+
+  <section class="card-pad create-card">
+    <h2 class="card-h">New session</h2>
+    <p class="card-hint">A new session starts closed. Activate it to make it the current operating period.</p>
+    <form id="createForm" novalidate>
+      <div class="f-grid" style="grid-template-columns:1.4fr 1fr 1fr">
+        <label class="fld2"><span class="f-label">Session name</span><input class="field" name="name" type="text" placeholder="e.g. 2027–28" autocomplete="off"><span class="fe" data-err="name"></span></label>
+        <label class="fld2"><span class="f-label">Start date</span><input class="field" name="start_date" type="date"><span class="fe" data-err="start_date"></span></label>
+        <label class="fld2"><span class="f-label">End date</span><input class="field" name="end_date" type="date"><span class="fe" data-err="end_date"></span></label>
+      </div>
+      <div class="form-actions"><button class="btn b-filled" type="submit" id="createBtn">Create session</button></div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>All sessions</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('admin/sessions.html');
+  var esc=SE.esc, form=document.getElementById('createForm');
+  function pill(v){ return SE.statusPill('session',v).outerHTML; }
+
+  var panel=SE.ui.listPanel({
+    mount:'listBody', count:'listCount',
+    fetch:function(){ return SE.api.sessions.list(); },
+    empty:{title:'No sessions yet', sub:'Create your first academic session above to begin.', icon:'box'},
+    row:function(s){
+      var act = s.status==='ACTIVE'
+        ? '<button class="btn b-red-tinted b-xs" type="button" data-act="close">Close</button>'
+        : '<button class="btn b-tinted b-xs" type="button" data-act="activate">Activate</button>';
+      return '<div class="row" data-id="'+s.id+'" data-status="'+s.status+'"><div class="row-main">'+
+        '<p class="row-title">'+esc(s.name)+'</p><p class="row-sub">'+SE.fmtDate(s.start_date)+' — '+SE.fmtDate(s.end_date)+'</p></div>'+
+        '<div class="row-acts">'+pill(s.status)+act+'</div></div>';
+    },
+    onAction:function(id,act,rowEl){
+      if(act==='activate'){
+        SE.ui.confirm({title:'Activate this session?',body:'Only one session can be active. The current active session will be closed automatically.',confirmLabel:'Activate'})
+          .then(function(ok){ if(!ok)return;
+            SE.api.sessions.activate(id).then(function(){ panel.reload(); SE.shell.toast('Session activated.'); })
+              .catch(function(){ SE.shell.toast('Couldn’t activate — try again.'); });
+          });
+      } else if(act==='close'){
+        SE.ui.confirm({title:'Close this session?',body:'Closing stops new admissions and billing for this period. All history is preserved and stays viewable.',confirmLabel:'Close session',tone:'danger'})
+          .then(function(ok){ if(!ok)return;
+            SE.api.sessions.close(id).then(function(){ panel.reload(); SE.shell.toast('Session closed.'); })
+              .catch(function(){ SE.shell.toast('Couldn’t close — try again.'); });
+          });
+      }
+    }
+  });
+
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    SE.ui.clearErrors(form);
+    var ok=SE.ui.validate(form,{
+      name:function(v){ return v?null:'Enter a session name.'; },
+      start_date:function(v){ return v?null:'Pick a start date.'; },
+      end_date:function(v){ if(!v)return 'Pick an end date.'; var s=form.elements.start_date.value; if(s&&v<=s)return 'End date must be after the start.'; return null; }
+    });
+    if(!ok)return;
+    var btn=document.getElementById('createBtn'); btn.disabled=true;
+    SE.api.sessions.create({name:form.elements.name.value.trim(),start_date:form.elements.start_date.value,end_date:form.elements.end_date.value})
+      .then(function(){ form.reset(); btn.disabled=false; panel.reload(); SE.shell.toast('Session created — it starts closed. Activate it when ready.'); })
+      .catch(function(err){ btn.disabled=false; SE.shell.toast((err&&err.message)||'Couldn’t create the session.'); });
+  });
+})();
+</script>
+</body>
+</html>

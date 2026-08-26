@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Students · SmartEduTrack</title>
+<link rel="icon" href="../../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<script src="../shared/constants.js"></script>
+<script src="../shared/auth.js"></script>
+<script>SE.auth.require(SE.ROLE.TEACHER);</script>
+<script src="../shared/theme.js"></script>
+<script src="../shared/api.js"></script>
+<script src="../shared/app.js"></script>
+<script src="../shared/ui.js"></script>
+<script src="../shared/shell.js"></script>
+</head>
+<body>
+<main class="app-main">
+  <div class="page-head">
+    <h1>My Students</h1>
+    <p>Students currently enrolled with you, across the subjects you teach. To enroll a new student or end an enrollment, use <b>My Enrollments</b>.</p>
+  </div>
+
+  <div class="list-tools" role="group" aria-label="Search students">
+    <div class="search-wrap" style="flex:1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input class="field search" id="searchInput" type="search" placeholder="Search name or student ID" autocomplete="off" aria-label="Search students by name or ID">
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Roster</h2><span class="count" id="listCount"></span></div>
+    <div id="listBody"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  SE.shell.render('teacher/students.html');
+  var esc=SE.esc;
+  var state={q:''};
+
+  function initials(n){ return String(n||'?').trim().split(/\s+/).map(function(w){return w.charAt(0);}).slice(0,2).join('').toUpperCase(); }
+
+  var panel=SE.ui.listPanel({
+    mount:'listBody', count:'listCount',
+    fetch:function(){
+      return SE.api.teacher.students().then(function(list){
+        var q=state.q.trim().toLowerCase();
+        if(q) list=list.filter(function(s){ return (s.student||'').toLowerCase().indexOf(q)>=0 || (s.student_code||'').toLowerCase().indexOf(q)>=0; });
+        return list;
+      });
+    },
+    empty:{title:'No students match', sub:'When the admin approves an enrollment for one of your subjects, that student appears here.', icon:'box'},
+    row:function(s){
+      var chips=(s.subjects||[]).map(function(sub){ return '<span class="chip c-blue">'+esc(sub)+'</span>'; }).join('');
+      return '<div class="row inset-ava" data-id="'+s.student_id+'">'+
+        '<span class="acct-ava" aria-hidden="true">'+esc(initials(s.student))+'</span>'+
+        '<div class="row-main">'+
+          '<p class="row-title">'+esc(s.student)+'</p>'+
+          '<p class="row-sub"><span class="lcode">'+esc(s.student_code)+'</span>'+(s.klass?' · '+esc(s.klass):'')+'</p>'+
+          '<p class="row-sub">Guardian '+esc(s.guardian_name||'—')+(s.guardian_phone?' · '+esc(s.guardian_phone):'')+'</p>'+
+        '</div>'+
+        '<div class="row-acts">'+chips+'</div></div>';
+    }
+  });
+
+  var searchInput=document.getElementById('searchInput'), st;
+  searchInput.addEventListener('input',function(){ clearTimeout(st); st=setTimeout(function(){ state.q=searchInput.value; panel.reload(); },200); });
+})();
+</script>
+</body>
+</html>

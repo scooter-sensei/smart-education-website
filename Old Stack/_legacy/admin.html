@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Administrator · Smart Education</title>
+<link rel="icon" href="../assets/logo.jpeg">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/logo.jpeg">
+<link rel="stylesheet" href="../portal.css">
+<script src="../theme.js"></script>
+<style>
+body{--maxw:1160px}
+.adm-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-top:16px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
+.card-h{font-size:17px;font-weight:650;letter-spacing:-.012em}
+.card-hint{font-size:13.5px;color:var(--secondary);margin:3px 0 14px;line-height:1.45}
+.t-chip{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--tint-blue);color:var(--blue);
+  font-size:13px;font-weight:600;
+  padding:5px 6px 5px 12px;border-radius:9px;
+}
+.t-chip button{
+  width:20px;height:20px;border:none;border-radius:6px;cursor:pointer;
+  background:rgba(0,122,255,.18);color:var(--blue);
+  font-size:13px;font-weight:700;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:background 140ms var(--ease-out),color 140ms var(--ease-out),transform 120ms var(--ease-out);
+}
+.t-chip button:hover{background:var(--red);color:#fff}
+.t-chip button:active{transform:scale(.9)}
+@media (max-width:960px){.adm-grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
+.rep-state{font-size:13px;font-weight:600}
+
+/* Interactive charts */
+.chart-host{position:relative}
+.chart-bar{cursor:pointer;transition:opacity .15s var(--ease-out),filter .15s var(--ease-out)}
+.chart-bar:hover,.chart-bar:focus-visible{opacity:1;filter:brightness(1.12)}
+.chart-bar:focus{outline:none}
+.pt{cursor:pointer}
+.pt:focus{outline:none}
+.pt .dot{transform-box:fill-box;transform-origin:center;transition:transform .15s var(--ease-out)}
+.pt:hover .dot,.pt:focus-visible .dot{transform:scale(1.6)}
+.pt .halo{opacity:0;transition:opacity .15s var(--ease-out)}
+.pt:hover .halo,.pt:focus-visible .halo{opacity:1}
+.chart-tip{
+  position:absolute;z-index:5;pointer-events:none;left:0;top:0;
+  min-width:150px;max-width:240px;
+  background:var(--card);border:1px solid var(--separator);border-radius:12px;
+  box-shadow:0 14px 34px -12px rgba(0,0,0,.34);padding:10px 13px;
+  opacity:0;transform:translate(-50%,-100%) scale(.96);
+  transition:opacity .15s var(--ease-out),transform .15s var(--ease-out);
+}
+.chart-tip.on{opacity:1;transform:translate(-50%,-100%) scale(1)}
+.chart-tip.below{transform:translate(-50%,0) scale(.96)}
+.chart-tip.below.on{transform:translate(-50%,0) scale(1)}
+.chart-tip .tip-t{font-size:14.5px;font-weight:650;letter-spacing:-.01em;margin-bottom:3px}
+.chart-tip .tip-l{font-size:12.5px;color:var(--secondary);line-height:1.55}
+.chart-tip .tip-s{font-size:12.5px;font-weight:600;margin-top:5px;display:flex;align-items:center;gap:6px}
+.chart-tip .tip-s::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.chart-tip .tip-s.pos{color:var(--green)}
+.chart-tip .tip-s.neg{color:var(--red)}
+@media (prefers-reduced-motion:reduce){
+  .chart-tip,.pt .dot,.pt .halo,.chart-bar{transition:none}
+}
+
+/* Staff attendance register */
+.staff-tally{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13px;color:var(--secondary)}
+.staff-tally span{display:inline-flex;align-items:center}
+.staff-tally b{color:var(--label);font-weight:700;font-variant-numeric:tabular-nums;margin-left:4px}
+.staff-tally .dot{width:8px;height:8px;border-radius:50%;margin-right:6px;flex:none}
+.staff-quick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0 6px}
+.st-ava{
+  width:36px;height:36px;border-radius:50%;flex:none;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#fff;background:var(--teal);letter-spacing:.01em;
+}
+.st-month{font-variant-numeric:tabular-nums;white-space:nowrap}
+.st-seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;flex:none;width:312px;max-width:100%}
+.st-btn{
+  border:1.5px solid var(--separator);background:var(--card);cursor:pointer;
+  min-height:36px;padding:0 6px;border-radius:9px;
+  font-size:12.5px;font-weight:600;color:var(--secondary);
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:background 140ms var(--ease-out),color 140ms var(--ease-out),border-color 140ms var(--ease-out),transform 120ms var(--ease-out);
+}
+.st-btn:active{transform:scale(.95)}
+.st-btn.on-P{background:var(--green);border-color:var(--green);color:#fff}
+.st-btn.on-H{background:var(--orange);border-color:var(--orange);color:#fff}
+.st-btn.on-L{background:var(--blue);border-color:var(--blue);color:#fff}
+.st-btn.on-A{background:var(--red);border-color:var(--red);color:#fff}
+@media (max-width:600px){
+  .staff-row{flex-wrap:wrap}
+  .st-seg{width:100%}
+}
+</style>
+<script defer src="../translate.js"></script>
+</head>
+<body>
+<!-- LEGACY: pre-SmartEduTrack portal. Kept as reference; replaced screen-by-screen in later phases. Not linked from the live site. -->
+
+<header class="navbar" id="navbar">
+  <div class="nav-inner">
+    <span class="nav-lead">
+      <a class="nav-back" href="../index.html" aria-label="Back to the home page">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        Home
+      </a>
+      <img src="../assets/logo.jpeg" alt="Smart Education logo"><span class="nl-txt">Administrator Portal</span>
+    </span>
+    <span class="nav-title">Administrator</span>
+    <span class="nav-trail">
+      <button class="nav-icon" id="themeBtn" type="button" aria-pressed="false" aria-label="Switch to dark appearance">
+        <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <a class="nav-btn" href="../app/login.html">Log out</a>
+    </span>
+  </div>
+</header>
+
+<main class="shell">
+  <h1 class="lg-title">Administrator</h1>
+  <p class="lg-sub" id="lgSub">Thursday, 9 July 2026 · Smart Education Computer Centre</p>
+
+  <nav class="chipnav" aria-label="Jump to section">
+    <div class="chipnav-rail" id="chipRail">
+      <a href="#overview" class="on">Overview</a>
+      <a href="#revenue">Revenue</a>
+      <a href="#attendance">Attendance</a>
+      <a href="#staff">Staff</a>
+      <a href="#announce">Announce</a>
+      <a href="#flagged">Flagged<i class="chip-dot" aria-label="urgent report"></i></a>
+      <a href="#teachers">Teachers</a>
+      <a href="#holiday">Holiday</a>
+      <a href="#salaries">Salaries</a>
+      <a href="#fees">Fees</a>
+      <a href="#calendar">Calendar</a>
+      <a href="#users">Users</a>
+      <a href="#reports">Reports</a>
+    </div>
+  </nav>
+
+  <!-- Stats -->
+  <div class="stats" id="overview" data-anchor>
+    <div class="card-pad">
+      <p class="stat-lbl">Total enrollments</p>
+      <p class="stat-num" style="margin-top:6px">312</p>
+      <p class="stat-foot up">+18 this month</p>
+    </div>
+    <div class="card-pad">
+      <p class="stat-lbl">Students active now</p>
+      <p class="stat-num" style="margin-top:6px">47</p>
+      <p class="stat-foot">logged in on the portal</p>
+    </div>
+    <div class="card-pad">
+      <p class="stat-lbl">System health</p>
+      <p style="display:flex;align-items:center;gap:8px;margin-top:10px">
+        <span style="width:12px;height:12px;border-radius:50%;background:var(--green);flex:none;box-shadow:0 0 0 4px var(--tint-green)"></span>
+        <span style="font-size:20px;font-weight:700;letter-spacing:-.015em">All good</span>
+      </p>
+      <p class="stat-foot" style="margin-top:6px">Server, uptime, and database are normal.</p>
+    </div>
+    <div class="card-pad">
+      <p class="stat-lbl">Pending fees</p>
+      <p class="stat-num" style="margin-top:6px;color:var(--red)">23</p>
+      <p class="stat-foot">students, July 2026</p>
+    </div>
+  </div>
+
+  <div class="adm-grid">
+
+    <!-- Revenue -->
+    <section class="card-pad chart-host" id="revenue" data-anchor>
+      <h2 class="card-h">Revenue by year</h2>
+      <p class="card-hint">Fee collections, January to June of each year. Hover or tap a bar for detail.</p>
+      <div class="chart-wrap">
+        <svg viewBox="0 0 520 250" role="img" aria-label="Bar chart: revenue 4.2 lakh in 2024, 5.6 lakh in 2025, 7.1 lakh in 2026">
+          <g style="stroke:var(--separator)" stroke-width="0.6">
+            <line x1="46" y1="20" x2="510" y2="20"/><line x1="46" y1="70" x2="510" y2="70"/>
+            <line x1="46" y1="120" x2="510" y2="120"/><line x1="46" y1="170" x2="510" y2="170"/>
+          </g>
+          <line x1="46" y1="220" x2="510" y2="220" style="stroke:var(--secondary)" stroke-width="0.8"/>
+          <g class="chart-txt" font-size="11" text-anchor="end">
+            <text x="38" y="24">₹8L</text><text x="38" y="74">₹6L</text>
+            <text x="38" y="124">₹4L</text><text x="38" y="174">₹2L</text><text x="38" y="224">₹0</text>
+          </g>
+          <g>
+            <rect class="chart-bar" tabindex="0" role="button" x="86" y="115" width="76" height="105" rx="7" style="fill:var(--green)" opacity="0.4"
+              aria-label="2024: 4.2 lakh collected, 245 students enrolled"
+              data-tip-title="2024" data-tip-body="₹4.2L collected~Jan to Jun~245 students enrolled"></rect>
+            <rect class="chart-bar" tabindex="0" role="button" x="222" y="80" width="76" height="140" rx="7" style="fill:var(--green)" opacity="0.68"
+              aria-label="2025: 5.6 lakh collected, up 33 percent, 283 students enrolled"
+              data-tip-title="2025" data-tip-body="₹5.6L collected~283 students enrolled" data-tip-status="+33% vs 2024" data-tip-tone="good"></rect>
+            <rect class="chart-bar" tabindex="0" role="button" x="358" y="42.5" width="76" height="177.5" rx="7" style="fill:var(--green)"
+              aria-label="2026: 7.1 lakh collected, up 27 percent, 312 students enrolled"
+              data-tip-title="2026" data-tip-body="₹7.1L collected~312 students enrolled" data-tip-status="+27% vs 2025" data-tip-tone="good"></rect>
+          </g>
+          <g font-size="14" font-weight="700" text-anchor="middle" style="fill:var(--label)">
+            <text x="124" y="103">₹4.2L</text><text x="260" y="68">₹5.6L</text><text x="396" y="30.5">₹7.1L</text>
+          </g>
+          <g font-size="11.5" font-weight="700" text-anchor="middle" style="fill:var(--green)">
+            <text x="260" y="52">+33%</text><text x="396" y="14.5">+27%</text>
+          </g>
+          <g class="chart-txt" font-size="12.5" font-weight="600" text-anchor="middle">
+            <text x="124" y="242">2024</text><text x="260" y="242">2025</text><text x="396" y="242">2026</text>
+          </g>
+        </svg>
+      </div>
+      <p class="hint" style="margin-top:10px">Darker green marks the more recent year. Growth is shown against the previous year.</p>
+    </section>
+
+    <!-- Attendance trend -->
+    <section class="card-pad chart-host" id="attendance" data-anchor>
+      <h2 class="card-h">Attendance &amp; engagement</h2>
+      <p class="card-hint">Average attendance across all batches, last 6 months. Hover or tap a point for detail.</p>
+      <div class="chart-wrap">
+        <svg viewBox="0 0 560 240" role="img" aria-label="Line chart: monthly average attendance February to July">
+          <g style="stroke:var(--separator)" stroke-width="0.6">
+            <line x1="52" y1="12" x2="552" y2="12"/><line x1="52" y1="54" x2="552" y2="54"/>
+            <line x1="52" y1="96" x2="552" y2="96"/><line x1="52" y1="138" x2="552" y2="138"/>
+          </g>
+          <line x1="52" y1="180" x2="552" y2="180" style="stroke:var(--secondary)" stroke-width="0.8"/>
+          <g class="chart-txt" font-size="11" text-anchor="end">
+            <text x="44" y="16">100</text><text x="44" y="58">90</text><text x="44" y="100">80</text>
+            <text x="44" y="142">70</text><text x="44" y="184">60</text>
+          </g>
+          <line x1="52" y1="75" x2="552" y2="75" style="stroke:var(--red)" stroke-width="1.4" stroke-dasharray="6 5" opacity="0.55"/>
+          <text x="56" y="90" font-size="11" font-weight="700" style="fill:var(--red)">Target 85%</text>
+          <polyline points="80,49.8 168,41.4 256,54 344,62.4 432,83.4 520,58.2"
+            fill="none" style="stroke:var(--blue)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+          <g>
+            <g class="pt" tabindex="0" role="button" aria-label="February: 91 percent average, on target"
+               data-tip-title="February" data-tip-body="91% average~First month tracked" data-tip-status="On target" data-tip-tone="good">
+              <rect x="40" y="12" width="80" height="168" fill="transparent" pointer-events="all"/>
+              <circle class="halo" cx="80" cy="49.8" r="11" style="fill:var(--green)" opacity="0.16"/>
+              <circle class="dot" cx="80" cy="49.8" r="5" style="fill:var(--green)" stroke="var(--card)" stroke-width="2"/>
+            </g>
+            <g class="pt" tabindex="0" role="button" aria-label="March: 93 percent average, on target"
+               data-tip-title="March" data-tip-body="93% average~Up 2 from February" data-tip-status="On target" data-tip-tone="good">
+              <rect x="128" y="12" width="80" height="168" fill="transparent" pointer-events="all"/>
+              <circle class="halo" cx="168" cy="41.4" r="11" style="fill:var(--green)" opacity="0.16"/>
+              <circle class="dot" cx="168" cy="41.4" r="5" style="fill:var(--green)" stroke="var(--card)" stroke-width="2"/>
+            </g>
+            <g class="pt" tabindex="0" role="button" aria-label="April: 90 percent average, on target"
+               data-tip-title="April" data-tip-body="90% average~Down 3 from March" data-tip-status="On target" data-tip-tone="good">
+              <rect x="216" y="12" width="80" height="168" fill="transparent" pointer-events="all"/>
+              <circle class="halo" cx="256" cy="54" r="11" style="fill:var(--green)" opacity="0.16"/>
+              <circle class="dot" cx="256" cy="54" r="5" style="fill:var(--green)" stroke="var(--card)" stroke-width="2"/>
+            </g>
+            <g class="pt" tabindex="0" role="button" aria-label="May: 88 percent average, on target"
+               data-tip-title="May" data-tip-body="88% average~Down 2 from April" data-tip-status="On target" data-tip-tone="good">
+              <rect x="304" y="12" width="80" height="168" fill="transparent" pointer-events="all"/>
+              <circle class="halo" cx="344" cy="62.4" r="11" style="fill:var(--green)" opacity="0.16"/>
+              <circle class="dot" cx="344" cy="62.4" r="5" style="fill:var(--green)" stroke="var(--card)" stroke-width="2"/>
+            </g>
+            <g class="pt" tabindex="0" role="button" aria-label="June: 83 percent average, below the 85 percent target"
+               data-tip-title="June" data-tip-body="83% average~Down 5 from May~9 students below 75%" data-tip-status="Below the 85% target" data-tip-tone="bad">
+              <rect x="392" y="12" width="80" height="168" fill="transparent" pointer-events="all"/>
+              <circle class="halo" cx="432" cy="83.4" r="11" style="fill:var(--red)" opacity="0.18"/>
+              <circle class="dot" cx="432" cy="83.4" r="5" style="fill:var(--red)" stroke="var(--card)" stroke-width="2"/>
+            </g>
+            <g class="pt" tabindex="0" role="button" aria-label="July: 89 percent average, on target"
+               data-tip-title="July" data-tip-body="89% average~Up 6 from June" data-tip-status="On target" data-tip-tone="good">
+              <rect x="480" y="12" width="72" height="168" fill="transparent" pointer-events="all"/>
+              <circle class="halo" cx="520" cy="58.2" r="11" style="fill:var(--green)" opacity="0.16"/>
+              <circle class="dot" cx="520" cy="58.2" r="5" style="fill:var(--green)" stroke="var(--card)" stroke-width="2"/>
+            </g>
+          </g>
+          <g font-size="13" font-weight="700" text-anchor="middle" style="fill:var(--label)">
+            <text x="80" y="33.8">91%</text><text x="168" y="25.4">93%</text><text x="256" y="38">90%</text>
+            <text x="344" y="46.4">88%</text><text x="432" y="107.4" style="fill:var(--red)">83%</text><text x="520" y="42.2">89%</text>
+          </g>
+          <g class="chart-txt" font-size="12" font-weight="600" text-anchor="middle">
+            <text x="80" y="228">Feb</text><text x="168" y="228">Mar</text><text x="256" y="228">Apr</text>
+            <text x="344" y="228">May</text><text x="432" y="228">Jun</text><text x="520" y="228">Jul</text>
+          </g>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--green);border-radius:50%"></i>On target (85%+)</span>
+        <span><i style="background:var(--red);border-radius:50%"></i>Below target</span>
+      </div>
+      <p class="warn-foot">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><path d="M12 9v4M12 17h.01"/></svg>
+        June dipped below 85%. Consider a parent reminder.
+      </p>
+    </section>
+
+    <!-- Staff attendance -->
+    <section class="card-pad" id="staff" data-anchor style="grid-column:1 / -1">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap">
+        <div>
+          <h2 class="card-h">Staff attendance · today</h2>
+          <p class="card-hint" style="margin-bottom:0">Thursday, 9 July 2026 · mark each teacher and office staff, then save the register. Tap a marked button again to clear it.</p>
+        </div>
+        <div class="staff-tally" id="staffTally"></div>
+      </div>
+      <div class="staff-quick" id="staffQuick">
+        <span class="hint">Quick fill:</span>
+        <button type="button" class="btn b-gray b-xs" data-all="P">All present</button>
+        <button type="button" class="btn b-gray b-xs" data-all="clear">Clear all</button>
+      </div>
+      <div class="card" id="staffCard" style="background:transparent"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding-top:14px">
+        <button class="btn b-filled" type="button" id="saveStaffBtn">Save today’s register</button>
+        <span class="hint">Leave and half-days feed each teacher’s monthly attendance and salary sheet.</span>
+      </div>
+      <div id="staffBanner"></div>
+    </section>
+
+    <!-- Announcement -->
+    <section class="card-pad" id="announce" data-anchor>
+      <h2 class="card-h">Send an announcement</h2>
+      <p class="card-hint">Choose who should receive it, write the message, then press Send. It goes out as a pop-up, email, and SMS.</p>
+      <div class="f-grid" style="margin-bottom:14px">
+        <label><span class="f-label">Send to</span>
+          <select class="field">
+            <option>Everyone (students, teachers, parents)</option>
+            <option>All students</option>
+            <option>All teachers</option>
+            <option>Parents with pending fees</option>
+            <option>One batch only…</option>
+          </select>
+        </label>
+        <label><span class="f-label">Message</span>
+          <textarea class="field" rows="3" placeholder="Example: The institute will remain closed on 15 August."></textarea>
+        </label>
+      </div>
+      <button class="btn b-filled" type="button" id="annBtn">Send announcement</button>
+      <div id="annBanner"></div>
+    </section>
+
+    <!-- Flagged -->
+    <section class="card-pad" style="padding-bottom:6px" id="flagged" data-anchor>
+      <h2 class="card-h">Flagged content &amp; reports</h2>
+      <p class="card-hint" style="margin-bottom:6px">Review these first; newest at the top.</p>
+      <div class="card" style="background:transparent">
+        <div class="row row-flush">
+          <div class="row-main"><p class="row-title">Reported forum post</p><p class="row-sub">Student batch chat · reported by 2 users · today</p></div>
+          <span class="chip c-red-solid">Urgent</span>
+        </div>
+        <div class="row row-flush">
+          <div class="row-main"><p class="row-title">Questionable homework upload</p><p class="row-sub">Possible copied answer sheet · yesterday</p></div>
+          <span class="chip c-orange">Review</span>
+        </div>
+        <div class="row row-flush">
+          <div class="row-main"><p class="row-title">Duplicate account request</p><p class="row-sub">Same phone number used twice · 2 days ago</p></div>
+          <span class="chip c-gray">Low</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Teacher assignments -->
+    <section class="card-pad" id="teachers" data-anchor>
+      <h2 class="card-h">Teacher assignments</h2>
+      <p class="card-hint">A teacher can run several courses. Use the menu under a teacher to add a course; press × on a course to remove it.</p>
+      <div id="assignWrap" style="display:flex;flex-direction:column;gap:12px"></div>
+    </section>
+
+    <!-- Holiday -->
+    <section class="card-pad" id="holiday" data-anchor>
+      <h2 class="card-h">Announce a holiday</h2>
+      <p class="card-hint">Write the holiday name, pick the date, then press Announce. It appears instantly in the master calendar and in News &amp; Events on the home page.</p>
+      <div class="f-grid f-2" style="margin-bottom:14px">
+        <label><span class="f-label">Holiday name</span>
+          <input class="field" type="text" id="holName" placeholder="Example: Durga Puja break">
+        </label>
+        <label><span class="f-label">Date</span>
+          <input class="field" type="date" id="holDate">
+        </label>
+      </div>
+      <button class="btn b-green" type="button" id="holBtn">Announce holiday</button>
+      <div id="holBanner"></div>
+    </section>
+
+    <!-- Pay teachers -->
+    <section class="card-pad" id="salaries" data-anchor>
+      <h2 class="card-h">Pay teachers · July 2026 salaries</h2>
+      <p class="card-hint">For each pending teacher, choose UPI or Bank transfer. Green means the salary has been sent.</p>
+      <div class="card" id="payWrap" style="background:transparent"></div>
+      <p class="hint" style="margin-top:10px">Each payment is recorded on the teacher’s own portal under “Payments from the administrator”.</p>
+    </section>
+
+    <!-- Fee overview -->
+    <section class="card-pad" style="padding-bottom:6px" id="fees" data-anchor>
+      <h2 class="card-h">Fee overview · July 2026</h2>
+      <p class="card-hint" style="margin-bottom:6px">Green = paid, red = pending. The full list is in Reports.</p>
+      <div class="card" style="background:transparent">
+        <div class="row row-flush"><div class="row-main"><p class="row-title">Riya Sen</p><p class="row-sub">Class X · Maths &amp; Science</p></div><span class="chip c-red">Pending</span></div>
+        <div class="row row-flush"><div class="row-main"><p class="row-title">Aman Gupta</p><p class="row-sub">Python (Beginner)</p></div><span class="chip c-green">Paid</span></div>
+        <div class="row row-flush"><div class="row-main"><p class="row-title">Sneha Das</p><p class="row-sub">NEET Preparation</p></div><span class="chip c-green">Paid</span></div>
+        <div class="row row-flush"><div class="row-main"><p class="row-title">Rahul Roy</p><p class="row-sub">Java Full Stack</p></div><span class="chip c-red">Pending</span></div>
+        <div class="row row-flush"><div class="row-main"><p class="row-title">Ishita Paul</p><p class="row-sub">Spoken English</p></div><span class="chip c-green">Paid</span></div>
+      </div>
+    </section>
+
+    <!-- Master calendar -->
+    <section class="card-pad" style="padding-bottom:6px" id="calendar" data-anchor>
+      <h2 class="card-h">Master calendar</h2>
+      <p class="card-hint" style="margin-bottom:6px">Terms, examinations, maintenance windows, holidays.</p>
+      <div class="card" id="calWrap" style="background:transparent"></div>
+    </section>
+
+    <!-- User management -->
+    <section class="card" style="align-self:stretch" id="users" data-anchor>
+      <div class="row" style="padding-top:14px;padding-bottom:4px"><h2 class="card-h">User management</h2></div>
+      <div class="row" style="border:none;padding-top:0;padding-bottom:10px"><p class="card-hint" style="margin:0">Create or remove student and teacher accounts.</p></div>
+      <a class="row row-tap" href="accounts.html?new=student" style="text-decoration:none;color:inherit">
+        <span class="ib ib-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span>
+        <div class="row-main"><p class="row-title">Create a new student account</p></div>
+        <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </a>
+      <a class="row row-tap" href="accounts.html?new=teacher" style="text-decoration:none;color:inherit">
+        <span class="ib ib-indigo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5zM6 12.5V17c0 1.66 2.69 3 6 3s6-1.34 6-3v-4.5"/></svg></span>
+        <div class="row-main"><p class="row-title">Create a new teacher account</p></div>
+        <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </a>
+      <a class="row row-tap" href="accounts.html" style="text-decoration:none;color:inherit">
+        <span class="ib ib-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg></span>
+        <div class="row-main"><p class="row-title">Remove an existing account</p></div>
+        <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </a>
+    </section>
+
+    <!-- Reports -->
+    <section class="card" style="align-self:stretch" id="reports" data-anchor>
+      <div class="row" style="padding-top:14px;padding-bottom:4px"><h2 class="card-h">Automated reports</h2></div>
+      <div class="row" style="border:none;padding-top:0;padding-bottom:10px"><p class="card-hint" style="margin:0">One press generates and downloads the report as a PDF.</p></div>
+      <div class="row row-tap rep-row" tabindex="0" role="button">
+        <span class="ib ib-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></span>
+        <div class="row-main"><p class="row-title">Government compliance report</p></div>
+        <span class="rep-state chev">PDF</span>
+      </div>
+      <div class="row row-tap rep-row" tabindex="0" role="button">
+        <span class="ib ib-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></span>
+        <div class="row-main"><p class="row-title">Accreditation data pack</p></div>
+        <span class="rep-state chev">PDF</span>
+      </div>
+      <div class="row row-tap rep-row" tabindex="0" role="button">
+        <span class="ib ib-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></span>
+        <div class="row-main"><p class="row-title">Internal monthly review</p></div>
+        <span class="rep-state chev">PDF</span>
+      </div>
+    </section>
+
+  </div>
+
+  <p class="sec-note" style="text-align:center;padding-top:34px">Smart Education Computer Centre · Kanyapur, Asansol</p>
+</main>
+
+<script src="../portal.js"></script>
+<script>
+(function(){
+  'use strict';
+  var banner=SE.banner,esc=SE.esc;
+
+  document.getElementById('annBtn').addEventListener('click',function(){
+    banner('annBanner','green','Announcement queued. It will reach everyone within 5 minutes.');
+  });
+
+  /* ---- Teacher assignments ---- */
+  var allCourses=['School Coaching (Class I–XII)','NEET Biology','NEET Physics & Chemistry','JEE Maths','Spoken English','Python (Beginner batch)','C Programming (Evening batch)','Java Full Stack','Web Technologies'];
+  var assign=[
+    {teacher:'Udayan Choudhury',photo:'assets/teachers/udayan-choudhury.png',courses:['Python (Beginner batch)','C Programming (Evening batch)']},
+    {teacher:'Arya Pratap Singh',photo:'assets/teachers/arya-pratap-singh.png',courses:['Java Full Stack']},
+    {teacher:'Raj Bharti',photo:'assets/teachers/raj-bharti.png',courses:['Spoken English']},
+    {teacher:'Arijit Chandra',photo:'assets/teachers/arijit-chandra.png',courses:['NEET Biology']}
+  ];
+  function renderAssign(){
+    var host=document.getElementById('assignWrap');
+    host.innerHTML=assign.map(function(t,ti){
+      var chips=t.courses.map(function(c){
+        return '<span class="t-chip">'+esc(c)+'<button type="button" title="Remove this course" data-t="'+ti+'" data-c="'+esc(c)+'">×</button></span>';
+      }).join('');
+      if(!chips) chips='<span class="hint">No courses assigned yet. Pick one from the menu below.</span>';
+      var avail=allCourses.filter(function(c){return t.courses.indexOf(c)===-1;})
+        .map(function(c){return '<option value="'+esc(c)+'">'+esc(c)+'</option>';}).join('');
+      return '<div style="background:var(--fill);border-radius:12px;padding:12px">'+
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+
+        '<img class="ava" src="'+t.photo+'" alt="'+esc(t.teacher)+'" width="36" height="36" loading="lazy">'+
+        '<p class="row-title">'+esc(t.teacher)+'</p></div>'+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+chips+'</div>'+
+        '<select class="field asg-add" data-t="'+ti+'" style="min-height:40px;font-size:14px">'+
+        '<option value="">+ Add another course…</option>'+avail+'</select></div>';
+    }).join('');
+    host.querySelectorAll('.t-chip button').forEach(function(b){
+      b.addEventListener('click',function(){
+        var t=assign[+b.dataset.t];
+        t.courses=t.courses.filter(function(c){return c!==b.dataset.c;});
+        renderAssign();
+      });
+    });
+    host.querySelectorAll('.asg-add').forEach(function(sel){
+      sel.addEventListener('change',function(){
+        var v=sel.value;if(!v)return;
+        var t=assign[+sel.dataset.t];
+        if(t.courses.indexOf(v)===-1)t.courses.push(v);
+        renderAssign();
+      });
+    });
+  }
+  renderAssign();
+
+  /* ---- Master calendar + holidays ---- */
+  var cal=[
+    {day:'20',month:'JUL',title:'Unit tests · all school batches',kind:'Examination',cls:'ds-red'},
+    {day:'15',month:'AUG',title:'Independence Day',kind:'Holiday',cls:'ds-green'},
+    {day:'24',month:'AUG',title:'Portal maintenance, 11 pm to 1 am',kind:'Maintenance window',cls:'ds-gray'},
+    {day:'01',month:'SEP',title:'Half-yearly examinations begin',kind:'Examination',cls:'ds-red'}
+  ];
+  function renderCal(){
+    document.getElementById('calWrap').innerHTML=cal.map(function(c){
+      return '<div class="row row-flush">'+
+        '<span class="date-sq '+c.cls+'"><b>'+c.day+'</b><span>'+c.month+'</span></span>'+
+        '<div class="row-main"><p class="row-title">'+esc(c.title)+'</p><p class="row-sub">'+esc(c.kind)+'</p></div></div>';
+    }).join('');
+  }
+  renderCal();
+
+  document.getElementById('holBtn').addEventListener('click',function(){
+    var name=(document.getElementById('holName').value||'').trim(),
+        date=document.getElementById('holDate').value;
+    if(!name){
+      banner('holBanner','red','Please type the holiday name first.');
+      return;
+    }
+    var day='—',month='TBA';
+    if(date){
+      var d=new Date(date+'T00:00:00');
+      day=String(d.getDate());
+      month=d.toLocaleDateString('en-GB',{month:'short'}).toUpperCase();
+    }
+    cal.unshift({day:day,month:month,title:name,kind:'Holiday · institute closed',cls:'ds-green'});
+    renderCal();
+    document.getElementById('holName').value='';
+    banner('holBanner','green','Holiday announced. It is now on the master calendar and the home-page News & Events.');
+  });
+
+  /* ---- Teacher payments ---- */
+  var pay=[
+    {name:'Udayan Choudhury',photo:'assets/teachers/udayan-choudhury.png',amount:'18,500'},
+    {name:'Arya Pratap Singh',photo:'assets/teachers/arya-pratap-singh.png',amount:'17,000'},
+    {name:'Raj Bharti',photo:'assets/teachers/raj-bharti.png',amount:'15,500'},
+    {name:'Arijit Chandra',photo:'assets/teachers/arijit-chandra.png',amount:'19,000'}
+  ];
+  var payStatus={};
+  function renderPay(){
+    var host=document.getElementById('payWrap');
+    host.innerHTML=pay.map(function(t,i){
+      var st=payStatus[t.name];
+      var trail=st
+        ?'<span class="chip c-green">Paid by '+(st==='upi'?'UPI':'bank transfer')+'</span>'
+        :'<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+         '<button type="button" class="btn b-green b-xs pay-b" data-i="'+i+'" data-m="upi">Pay by UPI</button>'+
+         '<button type="button" class="btn b-green-tinted b-xs pay-b" data-i="'+i+'" data-m="bank">Bank transfer</button></div>';
+      return '<div class="row inset-ava row-flush">'+
+        '<img class="ava" src="'+t.photo+'" alt="'+esc(t.name)+'" width="36" height="36" loading="lazy">'+
+        '<div class="row-main"><p class="row-title">'+esc(t.name)+'</p><p class="row-sub">Salary: ₹'+t.amount+'</p></div>'+trail+'</div>';
+    }).join('');
+    host.querySelectorAll('.pay-b').forEach(function(b){
+      b.addEventListener('click',function(){
+        payStatus[pay[+b.dataset.i].name]=b.dataset.m;
+        renderPay();
+      });
+    });
+  }
+  renderPay();
+
+  /* ---- Staff attendance (front-end demo) ---- */
+  var staff=[
+    {name:'Udayan Choudhury',role:'Python · C Programming',photo:'assets/teachers/udayan-choudhury.png',month:96},
+    {name:'Arya Pratap Singh',role:'Java Full Stack',photo:'assets/teachers/arya-pratap-singh.png',month:92},
+    {name:'Raj Bharti',role:'Spoken English',photo:'assets/teachers/raj-bharti.png',month:88},
+    {name:'Arijit Chandra',role:'NEET Biology',photo:'assets/teachers/arijit-chandra.png',month:99},
+    {name:'Priyanka Dev',role:'Front office',photo:null,month:97},
+    {name:'Sujoy Mondal',role:'Computer lab assistant',photo:null,month:94}
+  ];
+  var STATES=[{k:'P',t:'Present'},{k:'H',t:'Half-day',s:'½ day'},{k:'L',t:'Leave'},{k:'A',t:'Absent'}];
+  var staffMark={};
+  ['P','P','P','L','P','H'].forEach(function(k,i){ if(staff[i]) staffMark[staff[i].name]=k; });
+
+  function stAva(s){
+    if(s.photo) return '<img class="ava" src="'+s.photo+'" alt="'+esc(s.name)+'" width="36" height="36" loading="lazy">';
+    var init=s.name.split(' ').map(function(w){return w.charAt(0);}).slice(0,2).join('');
+    return '<span class="st-ava" aria-hidden="true">'+esc(init)+'</span>';
+  }
+  function renderStaff(){
+    var host=document.getElementById('staffCard');
+    host.innerHTML=staff.map(function(s,i){
+      var cur=staffMark[s.name]||'';
+      var seg=STATES.map(function(st){
+        var on=cur===st.k;
+        return '<button type="button" class="st-btn'+(on?' on-'+st.k:'')+'" data-i="'+i+'" data-k="'+st.k+
+          '" aria-pressed="'+on+'" aria-label="'+st.t+' for '+esc(s.name)+'">'+(st.s||st.t)+'</button>';
+      }).join('');
+      return '<div class="row inset-ava staff-row row-flush">'+
+        stAva(s)+
+        '<div class="row-main"><p class="row-title">'+esc(s.name)+'</p>'+
+        '<p class="row-sub">'+esc(s.role)+' · <span class="st-month">this month '+s.month+'%</span></p></div>'+
+        '<div class="st-seg" role="group" aria-label="Attendance for '+esc(s.name)+'">'+seg+'</div>'+
+        '</div>';
+    }).join('');
+    host.querySelectorAll('.st-btn').forEach(function(b){
+      b.addEventListener('click',function(){
+        var s=staff[+b.dataset.i];
+        staffMark[s.name]=(staffMark[s.name]===b.dataset.k)?'':b.dataset.k; /* tap again to clear */
+        document.getElementById('staffBanner').innerHTML='';
+        renderStaff();updateStaffTally();
+      });
+    });
+  }
+  function updateStaffTally(){
+    var c={P:0,H:0,L:0,A:0,none:0};
+    staff.forEach(function(s){var k=staffMark[s.name];if(k&&c[k]!=null)c[k]++;else c.none++;});
+    document.getElementById('staffTally').innerHTML=
+      '<span><span class="dot" style="background:var(--green)"></span>Present<b>'+c.P+'</b></span>'+
+      '<span><span class="dot" style="background:var(--orange)"></span>Half-day<b>'+c.H+'</b></span>'+
+      '<span><span class="dot" style="background:var(--blue)"></span>Leave<b>'+c.L+'</b></span>'+
+      '<span><span class="dot" style="background:var(--red)"></span>Absent<b>'+c.A+'</b></span>'+
+      '<span><span class="dot" style="background:var(--gray)"></span>Not marked<b>'+c.none+'</b></span>';
+  }
+  document.getElementById('staffQuick').addEventListener('click',function(e){
+    var b=e.target.closest('button[data-all]');if(!b)return;
+    var all=b.dataset.all;
+    staff.forEach(function(s){staffMark[s.name]=(all==='P')?'P':'';});
+    document.getElementById('staffBanner').innerHTML='';
+    renderStaff();updateStaffTally();
+  });
+  document.getElementById('saveStaffBtn').addEventListener('click',function(){
+    var unmarked=staff.filter(function(s){return !staffMark[s.name];}).length;
+    if(unmarked===staff.length){banner('staffBanner','red','Mark at least one staff member before saving.');return;}
+    banner('staffBanner','green',"Today’s register saved."+(unmarked?' '+unmarked+' still unmarked.':' All staff marked.'));
+  });
+  renderStaff();updateStaffTally();
+
+  /* ---- Reports ---- */
+  document.querySelectorAll('.rep-row').forEach(function(r){
+    r.addEventListener('click',function(){
+      var st=r.querySelector('.rep-state');
+      st.textContent='Downloaded ✓';
+      st.style.color='var(--green)';
+    });
+  });
+
+  /* ---- Personalized greeting ---- */
+  var uid=null,role=null;
+  try{uid=localStorage.getItem('se-user-id');role=localStorage.getItem('se-role');}catch(e){}
+  if(role==='admin'&&uid){
+    document.getElementById('lgSub').textContent='Signed in as '+uid+' · Thursday, 9 July 2026';
+  }
+
+  /* ---- Dashboard KPIs count up on first view ---- */
+  var reduceMotion=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  function countUp(el){
+    if(!el||el.dataset.counted)return;
+    el.dataset.counted='1';
+    var raw=el.textContent.trim(),m=raw.match(/^(\D*)(\d[\d,]*)(.*)$/);
+    if(!m)return;
+    var prefix=m[1],digits=m[2].replace(/,/g,''),suffix=m[3],
+        target=parseInt(digits,10),
+        pad=(digits.length>1&&digits.charAt(0)==='0')?digits.length:0;
+    if(reduceMotion||!target){el.textContent=raw;return;}
+    var dur=Math.max(500,Math.min(1100,450+target*4)),t0=null;
+    function step(now){
+      if(t0===null)t0=now;
+      var p=Math.min((now-t0)/dur,1),v=Math.round((1-Math.pow(1-p,3))*target),s=''+v;
+      while(s.length<pad)s='0'+s;
+      el.textContent=prefix+s+suffix;
+      if(p<1)requestAnimationFrame(step); else el.textContent=raw;
+    }
+    requestAnimationFrame(step);
+  }
+  if('IntersectionObserver' in window){
+    var so=new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){countUp(e.target);so.unobserve(e.target);} });
+    },{threshold:.6});
+    document.querySelectorAll('.stat-num').forEach(function(el){so.observe(el);});
+  }else{
+    document.querySelectorAll('.stat-num').forEach(countUp);
+  }
+
+  /* ---- Interactive charts (hover / focus / tap tooltips) ---- */
+  function initChart(host){
+    var tip=document.createElement('div');
+    tip.className='chart-tip';
+    host.appendChild(tip);
+    function show(el){
+      var body=(el.getAttribute('data-tip-body')||'').split('~');
+      var status=el.getAttribute('data-tip-status');
+      var tone=el.getAttribute('data-tip-tone');
+      var html='<div class="tip-t">'+el.getAttribute('data-tip-title')+'</div>';
+      body.forEach(function(l){ if(l) html+='<div class="tip-l">'+l+'</div>'; });
+      if(status) html+='<div class="tip-s '+(tone==='bad'?'neg':'pos')+'">'+status+'</div>';
+      tip.innerHTML=html;
+      var hb=host.getBoundingClientRect(), eb=el.getBoundingClientRect();
+      tip.style.left=(eb.left+eb.width/2-hb.left)+'px';
+      tip.classList.add('on');
+      var above=eb.top-hb.top-10;
+      if(above-tip.offsetHeight<0){ tip.classList.add('below'); tip.style.top=(eb.bottom-hb.top+10)+'px'; }
+      else{ tip.classList.remove('below'); tip.style.top=above+'px'; }
+    }
+    function hide(){ tip.classList.remove('on'); }
+    host.querySelectorAll('[data-tip-title]').forEach(function(el){
+      el.addEventListener('mouseenter',function(){show(el);});
+      el.addEventListener('mouseleave',hide);
+      el.addEventListener('focus',function(){show(el);});
+      el.addEventListener('blur',hide);
+      el.addEventListener('click',function(e){e.stopPropagation();show(el);});
+    });
+    host.addEventListener('mouseleave',hide);
+  }
+  document.querySelectorAll('.chart-host').forEach(initChart);
+  document.addEventListener('click',function(){
+    document.querySelectorAll('.chart-tip.on').forEach(function(t){t.classList.remove('on');});
+  });
+})();
+</script>
+</body>
+</html>
